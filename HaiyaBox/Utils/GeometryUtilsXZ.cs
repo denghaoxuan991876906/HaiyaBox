@@ -4,6 +4,43 @@ namespace HaiyaBox.Utils;
 
 public static class GeometryUtilsXZ
 {
+    public static Vector3 ExtendPoint(Vector3 centerPoint, Vector3 referencePoint, float distanceToExtend)
+    {
+        // 将Vector3转换为Vector2进行平面计算
+        // 转换规则: Vector3.x = Vector2.x, Vector3.z = Vector2.y
+        Vector2 center2D = new Vector2(centerPoint.X, centerPoint.Z);
+        Vector2 reference2D = new Vector2(referencePoint.X, referencePoint.Z);
+        
+        // 计算从中心点到参考点的方向向量
+        Vector2 direction = reference2D - center2D;
+        
+        // 计算方向向量的单位向量（避免零向量情况）
+        Vector2 unitDirection;
+        if (direction.LengthSquared() < float.Epsilon)
+        {
+            // 如果参考点与中心点重合，默认沿X轴方向
+            unitDirection =new Vector2(1, 0);
+        }
+        else
+        {
+            unitDirection = Normalized(direction);
+        }
+        
+        // 计算延长后的2D点
+        Vector2 extended2D = reference2D + unitDirection * distanceToExtend;
+        
+        // 将计算结果转换回Vector3，保留原始Y值
+        return new Vector3(extended2D.X, referencePoint.Y, extended2D.Y);
+    }
+    // 标准化向量
+    public static Vector2 Normalized( Vector2 vector)
+    {
+        float magnitude = (float)Math.Sqrt(vector.LengthSquared());
+        if (magnitude < float.Epsilon)
+            return new Vector2(0, 0);
+            
+        return new Vector2(vector.X / magnitude, vector.Y / magnitude);
+    }
     /// <summary>
     /// 计算目标前向点
     /// </summary>

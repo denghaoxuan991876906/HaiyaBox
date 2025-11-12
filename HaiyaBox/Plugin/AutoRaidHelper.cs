@@ -26,6 +26,7 @@ namespace HaiyaBox.Plugin
         {
             TriggerMgr.Instance.Add("嗨呀AE工具", new 指定职能tp指定位置().GetType());
             TriggerMgr.Instance.Add("嗨呀AE工具", new 检测目标位置().GetType());
+            TriggerMgr.Instance.Add("嗨呀AE工具", new 启动bmr().GetType());
             actorControlHook = new ActorControlHook();
             return new PluginSetting
             {

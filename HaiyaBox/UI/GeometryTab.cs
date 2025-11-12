@@ -161,142 +161,29 @@ namespace HaiyaBox.UI
             ImGui.Spacing();
             // 显示记录的三个点坐标
             ImGui.Text($"点1: {FormatPointXZ(Point1World)}");
+            ImGui.SameLine();
+            if (ImGui.Button("复制##"))
+            {
+                ImGui.SetClipboardText($"({Point1World.Value.X:F2}f, {Point1World.Value.Y:F2}f, {Point1World.Value.Z:F2}f)");
+            }
             ImGui.Text($"点2: {FormatPointXZ(Point2World)}");
+            ImGui.SameLine();
+            if (ImGui.Button("复制##"))
+            {
+                ImGui.SetClipboardText($"({Point2World.Value.X:F2}f, {Point2World.Value.Y:F2}f, {Point2World.Value.Z:F2}f)");
+            }
             ImGui.Text($"点3: {FormatPointXZ(Point3World)}");
-
+            ImGui.SameLine();
+            if (ImGui.Button("复制##"))
+            {
+                ImGui.SetClipboardText($"({Point3World.Value.X:F2}f, {Point3World.Value.Y:F2}f, {Point3World.Value.Z:F2}f)");
+            }
             // 当记录了点1和点2后，计算并显示两点间的XZ平面距离，同时允许选择夹角顶点模式进行角度计算
             if (Point1World.HasValue && Point2World.HasValue)
             {
                 ImGui.TextColored(new Vector4(0.2f, 1f, 0.2f, 1f),
                     $"点1 -> 点2: 距离 {TwoPointDistanceXZ:F2}");
-                ImGui.Text("夹角顶点:");
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth(120f * scale);
-
-                // 根据配置判断当前使用的夹角顶点模式（场地中心或者点3）
-                string apexLabel = Settings.ApexMode == 0 ? "场地中心" : "点3(Alt)";
-                if (ImGui.BeginCombo("##ApexMode", apexLabel))
-                {
-                    if (ImGui.Selectable("场地中心", Settings.ApexMode == 0))
-                    {
-                        Settings.UpdateApexMode(0);
-                    }
-                    if (ImGui.Selectable("点3(Alt)", Settings.ApexMode == 1))
-                    {
-                        Settings.UpdateApexMode(1);
-                    }
-                    ImGui.EndCombo();
-                }
-
-                float angleAtApex;
-                // 根据选择的模式计算夹角
-                if (Settings.ApexMode == 0)
-                {
-                    var apexCenter = _centerPositions[Settings.SelectedCenterIndex];
-                    // 使用场地中心作为夹角顶点
-                    angleAtApex = GeometryUtilsXZ.AngleXZ(Point1World.Value, Point2World.Value, apexCenter);
-                    ImGui.TextColored(new Vector4(0.2f, 1f, 0.2f, 1f),
-                        $"夹角(场地中心): {angleAtApex:F2}°");
-                }
-                else if (Point3World.HasValue)
-                {
-                    // 使用记录的点3作为夹角顶点
-                    angleAtApex = GeometryUtilsXZ.AngleXZ(Point1World.Value, Point2World.Value, Point3World.Value);
-                    ImGui.TextColored(new Vector4(0.2f, 1f, 0.2f, 1f),
-                        $"夹角(点3): {angleAtApex:F2}°");
-
-                    // 计算点1、点2相对于线（场地中心到点3）的偏移量
-                    var (offsetX1, offsetZ1) = GeometryUtilsXZ.CalculateOffsetFromReference(Point1World.Value, Point3World.Value, _centerPositions[Settings.SelectedCenterIndex]);
-                    var (offsetX2, offsetZ2) = GeometryUtilsXZ.CalculateOffsetFromReference(Point2World.Value, Point3World.Value, _centerPositions[Settings.SelectedCenterIndex]);
-
-                    ImGui.Text("在场地中心到点3线上的偏移:");
-                    ImGui.TextColored(new Vector4(0.2f, 1f, 0.2f, 1f),
-                        $"点1: X={offsetX1:F2}, Z={offsetZ1:F2}   点2: X={offsetX2:F2}, Z={offsetZ2:F2}");
-                }
-                else
-                {
-                    // 未记录点3时，无法计算点3为顶点的夹角，给出错误提示
-                    ImGui.TextColored(new Vector4(1f, 0.2f, 0.2f, 1f),
-                        "点3未记录，无法计算夹角");
-                }
             }
-
-            ImGui.Spacing();
-            ImGui.Separator();
-            ImGui.Spacing();
-
-            // 绘制下拉框，供用户选择场地中心和朝向点
-            ImGui.Text("场地中心:");
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(150f * scale);
-            if (ImGui.BeginCombo("##CenterCombo", _centerLabels[Settings.SelectedCenterIndex]))
-            {
-                for (int i = 0; i < _centerLabels.Length; i++)
-                {
-                    if (ImGui.Selectable(_centerLabels[i], i == Settings.SelectedCenterIndex))
-                    {
-                        // 更新当前选中的场地中心，并持久化设置
-                        Settings.UpdateSelectedCenterIndex(i);
-                    }
-                }
-                ImGui.EndCombo();
-            }
-
-            ImGui.Text("朝向点:");
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(150f * scale);
-            if (ImGui.BeginCombo("##DirectionCombo", _directionLabels[Settings.SelectedDirectionIndex]))
-            {
-                for (int i = 0; i < _directionLabels.Length; i++)
-                {
-                    if (ImGui.Selectable(_directionLabels[i], i == Settings.SelectedDirectionIndex))
-                    {
-                        // 更新当前选中的朝向点，并持久化设置
-                        Settings.UpdateSelectedDirectionIndex(i);
-                    }
-                }
-                ImGui.EndCombo();
-            }
-
-            ImGui.Spacing();
-            ImGui.Separator();
-            ImGui.Spacing();
-
-            // 弦长、角度、半径互算的输入区域，要求用户输入其中两个，由程序计算第三个数值
-            ImGui.Text("弦长 / 角度(°) / 半径 (输入其中两个):");
-            {
-                float chordInput = Settings.ChordInput;
-                if (ImGui.InputFloat("弦长##chord", ref chordInput))
-                {
-                    Settings.UpdateChordInput(chordInput);
-                }
-            }
-            {
-                float angleInput = Settings.AngleInput;
-                if (ImGui.InputFloat("角度##angle", ref angleInput))
-                {
-                    Settings.UpdateAngleInput(angleInput);
-                }
-            }
-            {
-                float radiusInput = Settings.RadiusInput;
-                if (ImGui.InputFloat("半径##radius", ref radiusInput))
-                {
-                    Settings.UpdateRadiusInput(radiusInput);
-                }
-            }
-            if (ImGui.Button("计算##chordAngleRadius"))
-            {
-                // 使用一个很小的阈值判断输入是否有效，否则认为为null
-                float? chordVal = MathF.Abs(Settings.ChordInput) < 1e-6f ? null : Settings.ChordInput;
-                float? angleVal = MathF.Abs(Settings.AngleInput) < 1e-6f ? null : Settings.AngleInput;
-                float? radiusVal = MathF.Abs(Settings.RadiusInput) < 1e-6f ? null : Settings.RadiusInput;
-                var (res, desc) = GeometryUtilsXZ.ChordAngleRadius(chordVal, angleVal, radiusVal);
-                // 如果计算结果有效，则显示计算的数值，否则显示错误描述
-                ChordResultLabel = res.HasValue ? $"{desc}: {res.Value:F2}" : $"错误: {desc}";
-            }
-            ImGui.SameLine();
-            ImGui.TextColored(new Vector4(0.2f, 1f, 0.2f, 1f), ChordResultLabel);
 
             ImGui.Spacing();
             ImGui.Separator();
@@ -389,139 +276,8 @@ namespace HaiyaBox.UI
                     ImGui.SetClipboardText(line);
                 }
             }
-            
-            // 预测玩家前方落点
-            DrawForwardMoveSection();
         }
 
-        private void DrawForwardMoveSection()
-        {
-            // 分隔线与提示文本
-            ImGui.Separator();
-            ImGui.Spacing();
-            ImGui.TextColored(new Vector4(0.8f, 0.95f, 0.6f, 1f), "计算玩家面前落点 + 绘制连线：");
-
-            // 复选框：选择是否使用自定义起始点（存储的 Ctrl 点）
-            ImGui.Checkbox("使用自定义起始点 (Ctrl点)", ref _useCustomOrigin);
-
-            // 如果使用自定义起始点，则显示自定义面向角度输入（单位：弧度，范围 -π ~ π）
-            if (_useCustomOrigin)
-            {
-                ImGui.InputFloat("自定义面向 (-π~π)##customRotation", ref _customRotation, 0.1f, 0.5f, "%.2f");
-            }
-
-            // 输入向前移动距离
-            ImGui.InputFloat("向前距离##forward", ref _moveForwardDistance, 1f, 5f, "%.2f");
-
-            // 当点击“计算落点”按钮时，根据不同模式计算出落点
-            if (ImGui.Button("计算落点##forward"))
-            {
-                if (_useCustomOrigin)
-                {
-                    // 使用已记录的 Ctrl 点作为起始坐标
-                    // 请确保 Point1World 已经在其他地方记录（例如按 Ctrl 时记录）
-                    if (Point1World.HasValue)
-                    {
-                        _forwardOrigin = Point1World.Value;
-                    }
-                    else
-                    {
-                        // 若未记录，则退回到玩家当前位置
-                        var me = Core.Me;
-                        if (me != null)
-                        {
-                            _forwardOrigin = me.Position;
-                        }
-                    }
-
-                    // 使用用户输入的自定义面向角度计算
-                    float sinAngle = MathF.Sin(_customRotation);
-                    float cosAngle = MathF.Cos(_customRotation);
-                    _forwardDest = new Vector3(
-                        _forwardOrigin.X + _moveForwardDistance * sinAngle,
-                        _forwardOrigin.Y,
-                        _forwardOrigin.Z + _moveForwardDistance * cosAngle
-                    );
-                }
-                else
-                {
-                    // 正常模式：使用玩家当前位置和玩家旋转角度计算
-                    var me = Core.Me;
-                    if (me != null)
-                    {
-                        _forwardOrigin = me.Position;
-                        float rot = me.Rotation;
-                        float sinRot = MathF.Sin(rot);
-                        float cosRot = MathF.Cos(rot);
-                        _forwardDest = new Vector3(
-                            _forwardOrigin.X + _moveForwardDistance * sinRot,
-                            _forwardOrigin.Y,
-                            _forwardOrigin.Z + _moveForwardDistance * cosRot
-                        );
-                    }
-                }
-                _hasCalculatedForwardPos = true;
-            }
-
-            // 同一行添加一个按钮，用于清除当前计算出的绘制结果
-            ImGui.SameLine();
-            if (ImGui.Button("清理绘制##forward"))
-            {
-                _hasCalculatedForwardPos = false;
-            }
-
-            // 如果已经计算出落点，则显示坐标信息，并在屏幕上绘制连线和落点箭头
-            if (_hasCalculatedForwardPos)
-            {
-                ImGui.Text($"玩家位置: <{_forwardOrigin.X:F2}, {_forwardOrigin.Y:F2}, {_forwardOrigin.Z:F2}>");
-                ImGui.Text($"落点位置: <{_forwardDest.X:F2}, {_forwardDest.Y:F2}, {_forwardDest.Z:F2}>");
-                ImGui.Spacing();
-
-                // 将3D世界坐标转换为屏幕坐标，即使转换返回 false也直接用 out 出来的值绘制
-                Svc.GameGui.WorldToScreen(_forwardOrigin, out Vector2 screenPos1);
-                Svc.GameGui.WorldToScreen(_forwardDest, out Vector2 screenPos2);
-
-                // 使用前景绘制列表，确保绘制不受窗口裁剪影响，直接绘制在屏幕上
-                var drawList = ImGui.GetForegroundDrawList();
-                uint lineColor = ImGui.ColorConvertFloat4ToU32(new Vector4(0f, 1f, 0f, 1f)); // 绿色
-                float thickness = 4.0f; // 稍微加粗连线
-
-                // 绘制从起始点到落点之间的连线
-                drawList.AddLine(screenPos1, screenPos2, lineColor, thickness);
-
-                // 在落点处绘制箭头
-                // 箭头参数：箭头长度（像素）与箭头角度（弧度）
-                float arrowHeadLength = 18.0f;
-                float arrowHeadAngle = 30f * (MathF.PI / 180f); // 30度
-
-                // 箭头指向设定为连线方向的反向（从落点指向起始点）
-                Vector2 lineDir = screenPos1 - screenPos2;
-                if (lineDir.LengthSquared() > 1e-6f)
-                {
-                    lineDir = Vector2.Normalize(lineDir);
-
-                    // 分别旋转 lineDir +arrowHeadAngle 和 -arrowHeadAngle，得到箭头两侧分支
-                    Vector2 arrowDir1 = new Vector2(
-                        lineDir.X * MathF.Cos(arrowHeadAngle) - lineDir.Y * MathF.Sin(arrowHeadAngle),
-                        lineDir.X * MathF.Sin(arrowHeadAngle) + lineDir.Y * MathF.Cos(arrowHeadAngle)
-                    );
-                    Vector2 arrowDir2 = new Vector2(
-                        lineDir.X * MathF.Cos(-arrowHeadAngle) - lineDir.Y * MathF.Sin(-arrowHeadAngle),
-                        lineDir.X * MathF.Sin(-arrowHeadAngle) + lineDir.Y * MathF.Cos(-arrowHeadAngle)
-                    );
-
-                    // 根据箭头分支方向计算箭头终点
-                    Vector2 arrowPoint1 = screenPos2 + arrowDir1 * arrowHeadLength;
-                    Vector2 arrowPoint2 = screenPos2 + arrowDir2 * arrowHeadLength;
-
-                    // 绘制两条箭头分支线
-                    drawList.AddLine(screenPos2, arrowPoint1, lineColor, thickness);
-                    drawList.AddLine(screenPos2, arrowPoint2, lineColor, thickness);
-                }
-
-                ImGui.TextColored(new Vector4(0.2f, 1f, 0.2f, 1f), "已绘制预测落点位置");
-            }
-        }
 
         
         /// <summary>

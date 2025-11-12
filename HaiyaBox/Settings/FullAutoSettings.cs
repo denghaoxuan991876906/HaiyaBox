@@ -546,6 +546,7 @@ namespace HaiyaBox.Settings
             new("佐拉加歼殛战", DutyCategory.Extreme),
             new("永恒女王忆想歼灭战", DutyCategory.Extreme),
             new("泽莲尼娅歼殛战", DutyCategory.Extreme),
+            new("护锁刃龙上位狩猎战", DutyCategory.Extreme),
             // 异闻
             new("异闻阿罗阿罗岛", DutyCategory.Variant),
             new("零式异闻阿罗阿罗岛", DutyCategory.Variant),

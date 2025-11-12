@@ -336,7 +336,16 @@ namespace HaiyaBox.UI
                 RemoteControlHelper.Cmd("", "/pdr load InstantLeaveDuty");
                 RemoteControlHelper.Cmd("", "/pdr leaveduty");
             }
-
+            ImGui.SameLine();
+            if (ImGui.Button("全队AI ON"))
+            {
+                RemoteControlHelper.Cmd("", "/bmrai on");
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("全队AI Off"))
+            {
+                RemoteControlHelper.Cmd("", "/bmrai off");
+            }
             // 修改为下拉菜单选择目标
             if (ImGui.BeginCombo("##KillAllCombo", _selectedKillTarget))
             {
