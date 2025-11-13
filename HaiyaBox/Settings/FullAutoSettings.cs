@@ -678,20 +678,10 @@ namespace HaiyaBox.Settings
 
         // 各事件类型的记录开关
         public bool RecordEnemyCastSpell { get; set; }
-        public bool RecordMapEffect { get; set; }
         public bool RecordTether { get; set; }
         public bool RecordTargetIconEffect { get; set; }
         public bool RecordUnitCreate { get; set; }
-        public bool RecordUnitDelete { get; set; }
-        public bool RecordAddStatus { get; set; }
-        public bool RecordRemoveStatus { get; set; }
-        public bool RecordReceviceAbilityEffect { get; set; }
-        public bool RecordGameLog { get; set; }
-        public bool RecordWeatherChanged { get; set; }
-        public bool RecordActorControl { get; set; }
-        public bool RecordPlayActionTimeline { get; set; }
-        public bool RecordEnvControl { get; set; }
-        public bool RecordNpcYell { get; set; }
+
 
         // =================== 事件记录功能配置方法 ===================
 
@@ -707,11 +697,6 @@ namespace HaiyaBox.Settings
             FullAutoSettings.Instance.Save();
         }
 
-        public void UpdateRecordMapEffect(bool value)
-        {
-            RecordMapEffect = value;
-            FullAutoSettings.Instance.Save();
-        }
 
         public void UpdateRecordTether(bool value)
         {
@@ -731,65 +716,6 @@ namespace HaiyaBox.Settings
             FullAutoSettings.Instance.Save();
         }
 
-        public void UpdateRecordUnitDelete(bool value)
-        {
-            RecordUnitDelete = value;
-            FullAutoSettings.Instance.Save();
-        }
-
-        public void UpdateRecordAddStatus(bool value)
-        {
-            RecordAddStatus = value;
-            FullAutoSettings.Instance.Save();
-        }
-
-        public void UpdateRecordRemoveStatus(bool value)
-        {
-            RecordRemoveStatus = value;
-            FullAutoSettings.Instance.Save();
-        }
-
-        public void UpdateRecordReceviceAbilityEffect(bool value)
-        {
-            RecordReceviceAbilityEffect = value;
-            FullAutoSettings.Instance.Save();
-        }
-
-        public void UpdateRecordGameLog(bool value)
-        {
-            RecordGameLog = value;
-            FullAutoSettings.Instance.Save();
-        }
-
-        public void UpdateRecordWeatherChanged(bool value)
-        {
-            RecordWeatherChanged = value;
-            FullAutoSettings.Instance.Save();
-        }
-
-        public void UpdateRecordActorControl(bool value)
-        {
-            RecordActorControl = value;
-            FullAutoSettings.Instance.Save();
-        }
-
-        public void UpdateRecordPlayActionTimeline(bool value)
-        {
-            RecordPlayActionTimeline = value;
-            FullAutoSettings.Instance.Save();
-        }
-
-        public void UpdateRecordEnvControl(bool value)
-        {
-            RecordEnvControl = value;
-            FullAutoSettings.Instance.Save();
-        }
-
-        public void UpdateRecordNpcYell(bool value)
-        {
-            RecordNpcYell = value;
-            FullAutoSettings.Instance.Save();
-        }
     }
 
     /// <summary>
