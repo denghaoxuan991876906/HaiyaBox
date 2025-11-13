@@ -31,10 +31,7 @@ namespace HaiyaBox.UI
         /// 记录运行时的点2（一般通过按Shift记录）。
         /// </summary>
         public Vector3? Point2World { get; private set; }
-        /// <summary>
-        /// 记录运行时的点3（一般通过按Alt记录，被用于计算夹角时选用点3作为顶点）。
-        /// </summary>
-        public Vector3? Point3World { get; private set; }
+
         /// <summary>
         /// 点1与点2在XZ平面的距离，实时计算，不保存到配置文件中。
         /// </summary>
@@ -172,12 +169,7 @@ namespace HaiyaBox.UI
             {
                 ImGui.SetClipboardText($"({Point2World.Value.X:F2}f, {Point2World.Value.Y:F2}f, {Point2World.Value.Z:F2}f)");
             }
-            ImGui.Text($"点3: {FormatPointXZ(Point3World)}");
-            ImGui.SameLine();
-            if (ImGui.Button("复制##"))
-            {
-                ImGui.SetClipboardText($"({Point3World.Value.X:F2}f, {Point3World.Value.Y:F2}f, {Point3World.Value.Z:F2}f)");
-            }
+
             // 当记录了点1和点2后，计算并显示两点间的XZ平面距离，同时允许选择夹角顶点模式进行角度计算
             if (Point1World.HasValue && Point2World.HasValue)
             {
@@ -289,7 +281,6 @@ namespace HaiyaBox.UI
             // 检查按键状态：Ctrl、Shift、Alt分别对应记录点1、点2、点3
             bool ctrl = ImGui.IsKeyPressed(ImGuiKey.LeftCtrl) || ImGui.IsKeyPressed(ImGuiKey.RightCtrl);
             bool shift = ImGui.IsKeyPressed(ImGuiKey.LeftShift) || ImGui.IsKeyPressed(ImGuiKey.RightShift);
-            bool alt = ImGui.IsKeyPressed(ImGuiKey.LeftAlt) || ImGui.IsKeyPressed(ImGuiKey.RightAlt);
 
             // 获取当前鼠标屏幕坐标，并尝试转换到3D世界坐标
             var mousePos = ImGui.GetMousePos();
@@ -301,11 +292,9 @@ namespace HaiyaBox.UI
                     Point1World = pointXZ;
                 else if (shift)
                     Point2World = pointXZ;
-                else if (alt)
-                    Point3World = pointXZ;
 
                 // 如果启用了Debug点模式，则将记录的点添加到Debug点集合中
-                if (Settings.AddDebugPoints && (ctrl || shift || alt))
+                if (Settings.AddDebugPoints && (ctrl || shift))
                     AddDebugPoint(pointXZ);
             }
 

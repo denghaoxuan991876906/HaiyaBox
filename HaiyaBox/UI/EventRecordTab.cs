@@ -341,7 +341,7 @@ namespace HaiyaBox.UI
             var spellCastPos = FormatPosition(spell.CastPos);
             var spellCastRot = spell.CastRot;
 
-            ImGui.Text($"  释放信息: {spellCastPos} (ID: {spellCastRot})");
+            ImGui.Text($"  释放信息: {spellCastPos} (rot: {spellCastRot})");
 
 
             ImGui.Unindent();
