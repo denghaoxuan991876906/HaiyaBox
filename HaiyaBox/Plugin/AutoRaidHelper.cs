@@ -16,6 +16,7 @@ namespace HaiyaBox.Plugin
         private readonly AutomationTab _automationTab = new();
         private readonly FaGeneralSettingTab _faGeneralSettingTab = new();
         private readonly DebugPrintTab _debugPrintTab = new();
+        private readonly EventRecordTab _eventRecordTab = new();
         private readonly BlackListTab _blackListTab = new();
         #region IAEPlugin Implementation
 
@@ -39,12 +40,14 @@ namespace HaiyaBox.Plugin
         {
             _automationTab.OnLoad(loadContext);
             _debugPrintTab.OnLoad(loadContext);
+            _eventRecordTab.OnLoad(loadContext);
         }
 
         public void Dispose()
         {
             _automationTab.Dispose();
             _debugPrintTab.Dispose();
+            _eventRecordTab.Dispose();
             actorControlHook?.Dispose();
         }
 
@@ -82,12 +85,17 @@ namespace HaiyaBox.Plugin
                     _debugPrintTab.Draw();
                     ImGui.EndTabItem();
                 }
+                if (ImGui.BeginTabItem("事件记录"))
+                {
+                    _eventRecordTab.Draw();
+                    ImGui.EndTabItem();
+                }
                 if (ImGui.BeginTabItem("黑名单管理"))
                 {
                     _blackListTab.Draw();
                     ImGui.EndTabItem();
                 }
-                
+
                 ImGui.EndTabBar();
             }
         }

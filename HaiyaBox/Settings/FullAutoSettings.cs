@@ -9,10 +9,11 @@ namespace HaiyaBox.Settings
     /// 本类负责读取、保存所有模块的配置，包括 GeometrySettings、AutomationSettings、FaGeneralSetting 和 DebugPrintSettings。
     /// 为保证全局唯一性，采用单例模式，并通过双重锁定实现线程安全的延迟加载。
     /// </summary>
-        public sealed class FullAutoSettings
+    public sealed class FullAutoSettings
     {
         // 配置文件的存储路径，通过当前工作目录与相对路径构造出绝对路径
-        private static string ConfigFilePath = Path.Combine(Share.CurrentDirectory, @"..\..\Settings\HaiyaBox\FullAutoSettings", $"{Share.LocalContentId}.json");
+        private static string ConfigFilePath = Path.Combine(Share.CurrentDirectory,
+            @"..\..\Settings\HaiyaBox\FullAutoSettings", $"{Share.LocalContentId}.json");
 
         // 单例实例
         private static FullAutoSettings? _instance;
@@ -41,6 +42,7 @@ namespace HaiyaBox.Settings
                         }
                     }
                 }
+
                 return _instance;
             }
         }
@@ -56,6 +58,9 @@ namespace HaiyaBox.Settings
 
         // DebugPrintSettings：调试打印相关设置，控制输出各类触发事件的调试信息
         public DebugPrintSettings DebugPrintSettings { get; set; } = new();
+
+        // RecordSettings：事件记录相关设置，控制记录各类触发事件的调试信息
+        public RecordSettings RecordSettings { get; set; } = new();
 
         /// <summary>
         /// 保存当前配置到配置文件
@@ -120,6 +125,7 @@ namespace HaiyaBox.Settings
             {
                 LogHelper.Error("全自动小助手配置文件加载失败");
             }
+
             return new FullAutoSettings();
         }
     }
@@ -236,34 +242,50 @@ namespace HaiyaBox.Settings
     {
         // 当前自动功能所在地图的 ID（默认值为 1238）
         public uint AutoFuncZoneId { get; set; } = 1238;
+
         // 自动倒计时开启与否，以及相应的倒计时延迟（单位：秒）
         public bool AutoCountdownEnabled { get; set; }
+
         public int AutoCountdownDelay { get; set; } = 15;
+
         // 自动退本状态及延迟（单位：秒）
         public bool AutoLeaveEnabled { get; set; }
         public bool RunTimeEnabled { get; set; }
         public int AutoLeaveDelay { get; set; } = 1;
+
         public int RunTimeLimit { get; set; } = 5;
+
         // 是否宝箱R点完成后再退本
         public bool AutoLeaveAfterLootEnabled { get; set; }
+
         // 自动排本开启状态及延迟（单位：秒）
         public bool AutoQueueEnabled { get; set; }
+
         public int AutoQueueDelay { get; set; } = 3;
+
         // 选定的副本名称（默认："光暗未来绝境战"）以及自定义副本名称
         public string SelectedDutyName { get; set; } = "光暗未来绝境战";
+
         public string CustomDutyName { get; set; } = "";
+
         // 解限功能开关（用于排本命令中追加 "unrest"）
         public bool UnrestEnabled { get; set; }
+
         // 最终生成的排本命令字符串（自动根据配置拼接组合）
         public string FinalSendDutyName { get; set; } = "";
+
         // 是否自动进新月岛
         public bool AutoEnterOccult { get; set; }
+
         // 新月岛时候自动切换未满级职业
         public bool AutoSwitchNotMaxSupJob { get; set; }
+
         // 新月岛换岛剩余时间
         public int OccultReEnterThreshold { get; set; } = 90;
+
         // 新月岛判断锁岛所需人数
         public int OccultLockThreshold { get; set; } = 40;
+
         // 新月岛小警察判断退岛所需人数
         public int OccultBlackListThreshold { get; set; } = 5;
         public int DSRCompletedCount { get; set; }
@@ -313,7 +335,7 @@ namespace HaiyaBox.Settings
             AutoLeaveEnabled = enabled;
             FullAutoSettings.Instance.Save();
         }
-        
+
         /// <summary>
         /// 更新退本启用状态，并保存配置
         /// </summary>
@@ -331,6 +353,7 @@ namespace HaiyaBox.Settings
             AutoLeaveDelay = delay;
             FullAutoSettings.Instance.Save();
         }
+
         /// <summary>
         /// 更新本次运行限制次数，并保存配置
         /// </summary>
@@ -393,7 +416,7 @@ namespace HaiyaBox.Settings
             UnrestEnabled = enabled;
             FullAutoSettings.Instance.Save();
         }
-        
+
         /// <summary>
         /// 更新完成指定次数后关闭游戏职能，并保存配置
         /// </summary>
@@ -424,7 +447,7 @@ namespace HaiyaBox.Settings
             FinalSendDutyName = finalName;
             FullAutoSettings.Instance.Save();
         }
-        
+
         /// <summary>
         /// 更新是否自动切换新月岛未满级辅助职业，并保存配置
         /// </summary>
@@ -433,7 +456,7 @@ namespace HaiyaBox.Settings
             AutoSwitchNotMaxSupJob = enabled;
             FullAutoSettings.Instance.Save();
         }
-        
+
         /// <summary>
         /// 更新新月岛重新进岛时间限制，并保存配置
         /// </summary>
@@ -442,7 +465,7 @@ namespace HaiyaBox.Settings
             OccultReEnterThreshold = minutes;
             FullAutoSettings.Instance.Save();
         }
-        
+
         /// <summary>
         /// 更新新月岛锁岛判断所需人数，并保存配置
         /// </summary>
@@ -451,7 +474,7 @@ namespace HaiyaBox.Settings
             OccultLockThreshold = count;
             FullAutoSettings.Instance.Save();
         }
-        
+
         /// <summary>
         /// 更新新月岛小警察判断退岛所需人数，并保存配置
         /// </summary>
@@ -460,7 +483,7 @@ namespace HaiyaBox.Settings
             OccultBlackListThreshold = count;
             FullAutoSettings.Instance.Save();
         }
-        
+
         // 定义一个枚举类型
         public enum DutyType : ushort
         {
@@ -477,16 +500,16 @@ namespace HaiyaBox.Settings
             Sphene = 1243,
             Recollection = 1271,
         }
-        
+
         public enum DutyCategory
         {
-            Ultimate,   // 绝本
-            Extreme,    // 极神
-            Savage,     // 零式
-            Variant,    // 异闻
-            Custom      // 自定义
+            Ultimate, // 绝本
+            Extreme, // 极神
+            Savage, // 零式
+            Variant, // 异闻
+            Custom // 自定义
         }
-        
+
         public enum KillTargetType
         {
             None,
@@ -494,7 +517,17 @@ namespace HaiyaBox.Settings
             SinglePlayer
         }
 
-        public enum PartyRole { MT, ST, H1, H2, D1, D2, D3, D4 }
+        public enum PartyRole
+        {
+            MT,
+            ST,
+            H1,
+            H2,
+            D1,
+            D2,
+            D3,
+            D4
+        }
 
         // 每个职能是否关游戏
         public Dictionary<PartyRole, bool> KillRoleFlags { get; }
@@ -528,8 +561,9 @@ namespace HaiyaBox.Settings
             { 11, ("预言师", 5) },
             { 12, ("盗贼", 6) }
         };
-        
+
         public record DutyInfo(string Name, DutyCategory Category);
+
         // 副本预设
         public static readonly List<DutyInfo> DutyPresets =
         [
@@ -553,7 +587,7 @@ namespace HaiyaBox.Settings
             // 自定义
             new("自定义", DutyCategory.Custom)
         ];
-        
+
 
         public void UpdateDutyCount(DutyType duty, int count)
         {
@@ -596,6 +630,7 @@ namespace HaiyaBox.Settings
                     LogHelper.PrintError("未知的副本类型");
                     return;
             }
+
             FullAutoSettings.Instance.Save();
         }
     }
@@ -610,6 +645,7 @@ namespace HaiyaBox.Settings
 
         //控制是否打印所有ActorControl信息
         public bool PrintActorControl { get; set; } = false;
+
         /// <summary>
         /// 更新 PrintDebugInfo 并保存配置
         /// </summary>
@@ -625,6 +661,133 @@ namespace HaiyaBox.Settings
         public void UpdatePrintActorControl(bool print)
         {
             PrintActorControl = print;
+            FullAutoSettings.Instance.Save();
+        }
+    }
+
+    /// <summary>
+    /// DebugPrintSettings 存储调试打印相关配置，
+    /// 包括总开关和针对各个事件类型的打印开关，
+    /// 用于在调试时决定是否输出对应事件的调试信息。
+    /// </summary>
+    public class RecordSettings
+    {
+        // =================== 事件记录功能开关 ===================
+        // 全局事件记录总开关
+        public bool EventRecordEnabled { get; set; }
+
+        // 各事件类型的记录开关
+        public bool RecordEnemyCastSpell { get; set; }
+        public bool RecordMapEffect { get; set; }
+        public bool RecordTether { get; set; }
+        public bool RecordTargetIconEffect { get; set; }
+        public bool RecordUnitCreate { get; set; }
+        public bool RecordUnitDelete { get; set; }
+        public bool RecordAddStatus { get; set; }
+        public bool RecordRemoveStatus { get; set; }
+        public bool RecordReceviceAbilityEffect { get; set; }
+        public bool RecordGameLog { get; set; }
+        public bool RecordWeatherChanged { get; set; }
+        public bool RecordActorControl { get; set; }
+        public bool RecordPlayActionTimeline { get; set; }
+        public bool RecordEnvControl { get; set; }
+        public bool RecordNpcYell { get; set; }
+
+        // =================== 事件记录功能配置方法 ===================
+
+        public void UpdateEventRecordEnabled(bool enabled)
+        {
+            EventRecordEnabled = enabled;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordEnemyCastSpell(bool value)
+        {
+            RecordEnemyCastSpell = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordMapEffect(bool value)
+        {
+            RecordMapEffect = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordTether(bool value)
+        {
+            RecordTether = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordTargetIconEffect(bool value)
+        {
+            RecordTargetIconEffect = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordUnitCreate(bool value)
+        {
+            RecordUnitCreate = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordUnitDelete(bool value)
+        {
+            RecordUnitDelete = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordAddStatus(bool value)
+        {
+            RecordAddStatus = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordRemoveStatus(bool value)
+        {
+            RecordRemoveStatus = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordReceviceAbilityEffect(bool value)
+        {
+            RecordReceviceAbilityEffect = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordGameLog(bool value)
+        {
+            RecordGameLog = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordWeatherChanged(bool value)
+        {
+            RecordWeatherChanged = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordActorControl(bool value)
+        {
+            RecordActorControl = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordPlayActionTimeline(bool value)
+        {
+            RecordPlayActionTimeline = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordEnvControl(bool value)
+        {
+            RecordEnvControl = value;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRecordNpcYell(bool value)
+        {
+            RecordNpcYell = value;
             FullAutoSettings.Instance.Save();
         }
     }
@@ -655,6 +818,7 @@ namespace HaiyaBox.Settings
         public bool PrintPlayActionTimeline { get; set; }
         public bool PrintEnvControl { get; set; }
         public bool PrintNpcYell { get; set; }
+
 
         /// <summary>
         /// 更新 DebugPrintEnabled 总开关，并保存配置
@@ -736,16 +900,19 @@ namespace HaiyaBox.Settings
             PrintActorControl = value;
             FullAutoSettings.Instance.Save();
         }
+
         public void UpdatePrintPlayActionTimeline(bool value)
         {
             PrintPlayActionTimeline = value;
             FullAutoSettings.Instance.Save();
         }
+
         public void UpdatePrintEnvControl(bool value)
         {
             PrintEnvControl = value;
             FullAutoSettings.Instance.Save();
         }
+
         public void UpdatePrintNpcYell(bool value)
         {
             PrintNpcYell = value;
