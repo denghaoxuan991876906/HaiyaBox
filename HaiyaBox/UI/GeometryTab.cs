@@ -1,9 +1,8 @@
-using System.Numerics;
+﻿using System.Numerics;
 using AEAssist;
 using AEAssist.CombatRoutine.Trigger;
 using AEAssist.Helper;
 using Dalamud.Bindings.ImGui;
-using AEAssist.CombatRoutine.Module.Target;
 using ECommons.DalamudServices;
 using HaiyaBox.Settings;
 using HaiyaBox.Utils;
@@ -73,34 +72,20 @@ namespace HaiyaBox.UI
         ];
         private int spellListIndex = 0;
 
+
+
         /// <summary>
         /// 在每一帧调用，主要用于更新鼠标点击记录（点1、点2、点3）。
         /// </summary>
-        public void Update() =>
+        public void Update()
+        {
             // 每帧检查是否按下Ctrl/Shift/Alt键，记录对应的点信息
             CheckPointRecording();
+        }
         /// <summary>
         /// 事件记录管理器
         /// </summary>
         private readonly EventRecordManager _recordManager = EventRecordManager.Instance;
-        private readonly HashSet<ITriggerCondParams> _triggerCondParamsList = new();
-        private readonly List<Vector3> _pointList = new();
-        private int 算法选择 = 0;
-        private List<string> 旋转参考点 = new();
-        private List<float> 旋转角度 = new();
-        private List<string> 旋转中心 = new();
-        private List<Vector3> 旋转计算结果 = new();
-        private List<string> 延伸点 = new();
-        private List<string> 延伸方向 = new();
-        private List<float> 延伸距离 = new();
-        private List<Vector3> 延伸计算结果 = new();
-
-        private Vector3 StringToVector3(string str)
-        {
-            var v = str.Split(",");
-            return new Vector3(float.Parse(v[0]), float.Parse(v[1]), float.Parse(v[2]));
-        }
-
         /// <summary>
         /// 绘制与更新 GeometryTab 的各项UI组件，展示实时鼠标位置、Debug点操作、距离、角度计算等信息。
         /// </summary>
@@ -108,7 +93,7 @@ namespace HaiyaBox.UI
         {
             // 绘制提示信息，说明如何使用键盘记录点以及如何选择夹角顶点模式
             ImGui.TextColored(new Vector4(1f, 0.85f, 0.4f, 1f),
-                "提示: Ctrl 记录点1, Shift 记录点2");
+                "提示: Ctrl 记录点1, Shift 记录点2, Alt 记录点3 (顶点)\n夹角顶点可选“场地中心”或“点3”");
             ImGui.Separator();
             ImGui.Spacing();
 
@@ -176,37 +161,6 @@ namespace HaiyaBox.UI
 
             ImGui.Text("根据记录的读条事件计算：");
 
-            ImGui.Text("当前可选中敌人");
-            var enemyList = TargetMgr.Instance.Enemys.Values.ToList();
-            if (enemyList.Count > 0)
-            {
-                foreach (var enemy in enemyList)
-                {
-                    ImGui.Text($"Name：{enemy.Name} ({enemy.DataId})");
-                    ImGui.SameLine();
-                    var pos = $"{enemy.Position.X:F2},{enemy.Position.Y:F2},{enemy.Position.Z:F2}";
-                    ImGui.Text("位置：" + pos);
-                    if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-                    {
-                        ImGui.SetClipboardText(pos);
-                    }
-                    ImGui.SameLine();
-                    var rot = $"{enemy.Rotation * 180 / float.Pi:F2}";
-                    ImGui.Text($"方向：{rot}");
-                    if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-                    {
-                        ImGui.SetClipboardText(rot);
-                    }
-                }
-            }
-            else
-            {
-                ImGui.Text("当前没有可选中敌人");
-            }
-            ImGui.Spacing();
-
-
-
             ImGui.Text("选择读条事件：");
             var spellList = _recordManager.GetRecords("EnemyCastSpell").Select((p =>
             {
@@ -220,157 +174,24 @@ namespace HaiyaBox.UI
                 if (spellListIndex >= spellList.Count)
                     spellListIndex = 0;
 
-                string currentSelection = spellList[spellListIndex] + $"#{spellListIndex + 1}";
+                string currentSelection = spellList[spellListIndex] + $"#{spellListIndex+1}";
                 if (ImGui.BeginCombo("##SpellList", currentSelection))
                 {
                     for (int i = 0; i < spellList.Count; i++)
                     {
                         bool isSelected = (spellListIndex == i);
-                        if (ImGui.Selectable(spellList[i] + $"#{i + 1}", isSelected))
+                        if (ImGui.Selectable(spellList[i] + $"#{i+1}", isSelected))
                         {
                             spellListIndex = i;
-                            _triggerCondParamsList.Add(_recordManager.GetRecords("EnemyCastSpell")[i]);
                         }
                     }
                     ImGui.EndCombo();
                 }
-
+                
             }
             else
             {
                 ImGui.TextColored(new Vector4(1f, 0.5f, 0.5f, 1f), "暂无读条事件记录");
-            }
-
-            ImGui.Spacing();
-            // 绘制选择的读条事件记录，每条记录的坐标和方向可以右键复制
-            for (int i = 0; i < _triggerCondParamsList.Count; i++)
-            {
-                var record = _triggerCondParamsList.ToList()[i];
-                if (record is EnemyCastSpellCondParams spellCondParams)
-                {
-                    ImGui.Text($"Name:{spellCondParams.SpellName} {spellCondParams.SpellId}");
-                    ImGui.SameLine();
-                    var castPos = FormatPosition(spellCondParams.CastPos);
-                    ImGui.Text($"Pos:{castPos}");
-                    if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-                    {
-                        ImGui.SetClipboardText($"{castPos.X},{castPos.Y},{castPos.Z}");
-                    }
-                    ImGui.SameLine();
-                    var castRot = (float)Math.Round(spellCondParams.CastRot * 180 / float.Pi, 2);
-                    ImGui.Text($"Rot:{castRot}");
-                    if (ImGui.IsItemHovered() && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-                    {
-                        ImGui.SetClipboardText($"{castRot}");
-                    }
-                    ImGui.SameLine();
-                    ImGui.Text($"可选中:{spellCondParams.Object.IsTargetable}");
-                    ImGui.SameLine();
-                    // 2. 给按钮添加唯一 ID（## 后面的内容是 ID 后缀，确保每行唯一）
-                    if (ImGui.Button($"删除##{i}")) // 关键修改：用索引 i 作为唯一标识
-                    {
-                        try
-                        {
-                            // 3. 用索引删除（安全，避免迭代器失效）
-                            _triggerCondParamsList.Remove(record);
-                            // 重要：删除后索引回退，避免跳过下一个元素
-                            i--;
-                        }
-                        catch (Exception e)
-                        {
-                            LogHelper.Print("删除失败");
-                            LogHelper.Print(e.Message);
-                        }
-                    }
-                }
-            }
-            ImGui.Spacing();
-            string 算法 = 算法选择 switch
-            {
-                0 => "旋转",
-                1 => "延伸",
-            };
-            ImGui.Text("选择计算方式：");
-            if (ImGui.BeginCombo("算法选择##", 算法))
-            {
-                if (ImGui.Selectable("旋转", 算法选择 == 0))
-                    算法选择 = 0;
-                if (ImGui.Selectable("延伸", 算法选择 == 1))
-                    算法选择 = 1;
-                ImGui.EndCombo();
-            }
-            if (ImGui.Button("添加计算"))
-            {
-                if (算法选择 == 0)
-                {
-                    旋转中心.Add(string.Empty);
-                    旋转角度.Add(0);
-                    旋转参考点.Add(string.Empty);
-                    旋转计算结果.Add(Vector3.Zero);
-                }
-                if (算法选择 == 1)
-                {
-                    延伸方向.Add(string.Empty);
-                    延伸距离.Add(0);
-                    延伸点.Add(string.Empty);
-                    延伸计算结果.Add(Vector3.Zero);
-                }
-            }
-            if (旋转计算结果.Count > 0)
-            {
-                for (int i = 0; i < 旋转计算结果.Count; i++)
-                {
-                    var buf = 旋转参考点[i];
-                    if (ImGui.InputText($"旋转参考点##{i}", ref buf, 256))
-                        旋转参考点[i] = buf;
-                    var buf2 = 旋转中心[i];
-                    if (ImGui.InputText($"旋转中心##{i}", ref buf2))
-                        旋转中心[i] = buf2;
-                    var buf3 = 旋转角度[i];
-                    if (ImGui.InputFloat($"旋转角度##{i}", ref buf3))
-                        旋转角度[i] = buf3;
-                    if (ImGui.Button($"计算结果##旋转{i}"))
-                    {
-                        var result = GeometryUtilsXZ.RotateAroundPoint(StringToVector3(旋转参考点[i]), StringToVector3(旋转中心[i]), 旋转角度[i]);
-                        延伸计算结果[i] = result;
-                        ImGui.Text($"计算结果：{FormatPosition(result)}");
-                        Share.TrustDebugPoint.Add(result);
-                    }
-                    if (ImGui.Button($"删除##计算{i}"))
-                    {
-                        旋转计算结果.RemoveAt(i);
-                        i--;
-                    }
-
-                }
-            }
-
-            if (延伸计算结果.Count > 0)
-            {
-                for (int i = 0; i < 延伸计算结果.Count; i++)
-                {
-                    var buf4 = 延伸点[i];
-                    if (ImGui.InputText($"延伸点##{i}", ref buf4))
-                        延伸点[i] = buf4;
-                    var buf5 = 延伸距离[i];
-                    if (ImGui.InputFloat($"延伸距离##{i}", ref buf5))
-                        延伸距离[i] = buf5;
-                    var buf6 = 延伸方向[i];
-                    if (ImGui.InputText($"延伸方向##{i}", ref buf6))
-                        延伸方向[i] = buf6;
-                    if (ImGui.Button($"计算结果##延伸{i}"))
-                    {
-                        var result = GeometryUtilsXZ.ExtendPoint( StringToVector3(延伸方向[i]), StringToVector3(延伸点[i]),延伸距离[i]);
-                        延伸计算结果[i] = result;
-                        ImGui.Text($"计算结果：{FormatPosition(result)}");
-                        Share.TrustDebugPoint.Add(result);
-                    }
-                    if (ImGui.Button($"删除##计算{i}"))
-                    {
-                        延伸计算结果.RemoveAt(i);
-                        i--;
-                    }
-                }
             }
 
             ImGui.Spacing();
@@ -500,15 +321,7 @@ namespace HaiyaBox.UI
                 TwoPointDistanceXZ = GeometryUtilsXZ.DistanceXZ(Point1World.Value, Point2World.Value);
             }
         }
-        private Vector3 FormatPosition(Vector3 position)
-        {
-            // 对每个分量四舍五入保留2位小数，转换为 float 类型（匹配 Vector3 分量类型）
-            float x = (float)Math.Round(position.X, 2);
-            float y = (float)Math.Round(position.Y, 2);
-            float z = (float)Math.Round(position.Z, 2);
 
-            return new Vector3(x, y, z);
-        }
         /// <summary>
         /// 格式化输出点的XZ坐标（如果点存在），否则返回"未记录"提示。
         /// </summary>
