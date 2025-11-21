@@ -74,6 +74,7 @@ namespace HaiyaBox.UI
                 { DutyType.Everkeep, () => UpdateDuty(DutyType.Everkeep, ref _everkeepCompletedCount, 1, "佐拉加") },
                 { DutyType.Sphene, () => UpdateDuty(DutyType.Sphene, ref _spheneCompletedCount, 2, "女王") },
                 { DutyType.Recollection, () => UpdateDuty(DutyType.Recollection, ref _recollectionCompletedCount, 1, "泽莲尼娅") },
+                { DutyType.Renlong , () => UpdateDuty(DutyType.Renlong, ref _renlongCompletedCount, 1, "上位刃龙")}
             };
             Settings.AutoEnterOccult = false;
         }
@@ -103,6 +104,7 @@ namespace HaiyaBox.UI
                 DutyType.Everkeep => Settings.EverkeepCompletedCount,
                 DutyType.Sphene => Settings.SpheneCompletedCount,
                 DutyType.Recollection => Settings.RecollectionCompletedCount,
+                DutyType.Renlong => Settings.RenlongCompletedCount,
                 _ => 0
             };
 
@@ -152,9 +154,12 @@ namespace HaiyaBox.UI
         private int _everkeepCompletedCount;
         // 记录零式阿罗阿罗岛低保数
         private int _aloaloCompletedCount;
+        // 记录上位刃龙低保数
+        private int _renlongCompletedCount;
 
         private bool _isCountdownRunning;
         private bool _isLeaveRunning;
+        private bool _isLootRunning;
         private bool _isQueueRunning;
         private bool _isEnterOccultRunning;
         private bool _isSwitchNotMaxSupJobRunning;
@@ -317,7 +322,24 @@ namespace HaiyaBox.UI
             {
                 Settings.UpdateAutoLeaveAfterLootEnabled(waitRCompleted);
             }
+            ImGui.SameLine();
 
+            //设置是否等待收集鳞片后再退本
+            bool waitCollected = Settings.AutoLeaveAfterCollectEnabled;
+            if (ImGui.Checkbox("等待收集鳞片后再退本", ref waitCollected))
+            {
+                Settings.UpdateAutoLeaveAfterCollectEnabled(waitCollected);
+            }
+            
+            if (waitCollected)
+            {
+                var enventId = Settings.CollectionEnventId;
+                if (ImGui.InputUInt("输入EnventId", ref enventId))
+                {
+                    Settings.CollectionEnventId = enventId;
+                    FullAutoSettings.Instance.Save();
+                }
+            }
             //【遥控按钮】
 
             ImGui.Separator();
@@ -892,8 +914,12 @@ namespace HaiyaBox.UI
                 return;
 
             lock (_leaveLock)
+            {
                 _isLeaveRunning = true;
-
+                if (Settings.AutoLeaveAfterLootEnabled)
+                    _isLootRunning = true;
+            }
+            
             try
             {
                 if (Settings is { AutoLeaveEnabled: false, AutoLeaveAfterLootEnabled: false })
@@ -904,12 +930,14 @@ namespace HaiyaBox.UI
 
                 if (Core.Resolve<MemApiDuty>().IsBoundByDuty() && _dutyCompleted)
                 {
+                    
                     // 获取当前副本信息
                     var info = AutomationSettings.DutyPresets.FirstOrDefault(d => d.Name == Settings.SelectedDutyName || d.Name == Settings.CustomDutyName);
                     // 判断是否极神
                     bool hasChest = info is { Category: DutyCategory.Extreme };
-                    
-                    if (Settings.AutoLeaveAfterLootEnabled && hasChest)
+                    if (hasChest)
+                        await Task.Delay(2000);
+                    //if (Settings.AutoLeaveAfterLootEnabled && hasChest && _isLootRunning)
                     {
                         unsafe
                         {
@@ -917,7 +945,7 @@ namespace HaiyaBox.UI
                             bool hasValidLoot = false;
                             bool allAwarded = true;
 
-                            if (lootPtr != null)
+                            if (lootPtr != null && Settings.AutoLeaveAfterLootEnabled && hasChest)
                             {
                                 var items = lootPtr->Items;
                                 for (int i = 0; i < items.Length; i++)
@@ -933,33 +961,32 @@ namespace HaiyaBox.UI
                                         }
                                     }
                                 }
-
+                                
                                 if (hasValidLoot && !_hasLootAppeared)
                                 {
                                     LogHelper.Print("检测到roll点界面出现，开始等待分配");
                                     _hasLootAppeared = true;
                                 }
+                                // 没见过有掉落物的roll点界面
+                                if (!_hasLootAppeared)
+                                    return;
+
+                                // 见过roll点界面，但是还有未分配物品
+                                if (!allAwarded)
+                                    return;
+                                
+                                _isLootRunning = false;
+                                return;
                             }
-
-                            // 没见过有掉落物的roll点界面
-                            if (!_hasLootAppeared)
-                                return;
-
-                            // 见过roll点界面，但是还有未分配物品
-                            if (!allAwarded)
-                                return;
-
-                            // 要么全部分配完成，要么面板已消失
-                            LogHelper.Print("所有物品已真正分配完成，准备退本");
-                            RemoteControlHelper.Cmd("", "/pdr load InstantLeaveDuty");
-                            RemoteControlHelper.Cmd("", "/pdr leaveduty");
-
-                            _isLeaveCompleted = true;
-                            _isLeaveRunning = false;
-                            return;
                         }
                     }
-                    
+                    var collect = Settings.AutoLeaveAfterCollectEnabled;
+                    if (collect)
+                    {
+                        LogHelper.Print("开始收集鳞片");
+                        RemoteControlHelper.Cmd("", "/xsz-eventstart "+Settings.CollectionEnventId);
+                        await Task.Delay(3000);
+                    }
                     // 否则直接延迟指定时间再退本
                     await Task.Delay(Settings.AutoLeaveDelay * 1000);
                     RemoteControlHelper.Cmd("", "/pdr load InstantLeaveDuty");

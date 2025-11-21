@@ -257,6 +257,10 @@ namespace HaiyaBox.Settings
 
         // 是否宝箱R点完成后再退本
         public bool AutoLeaveAfterLootEnabled { get; set; }
+        // 是否收集鳞片后再退本
+        public bool AutoLeaveAfterCollectEnabled { get; set; }
+        // 收集发包EnventId
+        public uint CollectionEnventId { get; set; } = 0;
 
         // 自动排本开启状态及延迟（单位：秒）
         public bool AutoQueueEnabled { get; set; }
@@ -299,6 +303,7 @@ namespace HaiyaBox.Settings
         public int TEACompletedCount { get; set; }
         public int RecollectionCompletedCount { get; set; }
         public int EverkeepCompletedCount { get; set; }
+        public int RenlongCompletedCount { get; set; }
 
         /// <summary>
         /// 更新当前地图 ID，并保存配置
@@ -371,7 +376,14 @@ namespace HaiyaBox.Settings
             AutoLeaveAfterLootEnabled = enabled;
             FullAutoSettings.Instance.Save();
         }
-
+        /// <summary>
+        /// 更新收集鳞片完成后再退本状态，并保存配置
+        /// </summary>
+        public void UpdateAutoLeaveAfterCollectEnabled(bool enabled)
+        {
+            AutoLeaveAfterCollectEnabled = enabled;
+            FullAutoSettings.Instance.Save();
+        }
         /// <summary>
         /// 更新排本启用状态，并保存配置
         /// </summary>
@@ -499,6 +511,7 @@ namespace HaiyaBox.Settings
             Everkeep = 1201,
             Sphene = 1243,
             Recollection = 1271,
+            Renlong = 1306,
         }
 
         public enum DutyCategory
