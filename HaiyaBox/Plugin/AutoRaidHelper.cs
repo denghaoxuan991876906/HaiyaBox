@@ -1,6 +1,7 @@
 ﻿using System.Runtime.Loader;
 using AEAssist.AEPlugin;
 using AEAssist.CombatRoutine.Trigger;
+using AEAssist.Helper;
 using AEAssist.Verify;
 using Dalamud.Bindings.ImGui;
 using HaiyaBox.Hooks;
@@ -15,7 +16,6 @@ namespace HaiyaBox.Plugin
         private readonly GeometryTab _geometryTab = new();
         private readonly AutomationTab _automationTab = new();
         private readonly FaGeneralSettingTab _faGeneralSettingTab = new();
-        private readonly DebugPrintTab _debugPrintTab = new();
         private readonly EventRecordTab _eventRecordTab = new();
         private readonly BlackListTab _blackListTab = new();
         #region IAEPlugin Implementation
@@ -25,6 +25,8 @@ namespace HaiyaBox.Plugin
 
         public PluginSetting BuildPlugin()
         {
+            /*if (ECHelper.ClientState.LocalContentId != 18014449510753729)
+                return null;*/
             TriggerMgr.Instance.Add("嗨呀AE工具", new 指定职能tp指定位置().GetType());
             TriggerMgr.Instance.Add("嗨呀AE工具", new 检测目标位置().GetType());
             TriggerMgr.Instance.Add("嗨呀AE工具", new 启动bmr().GetType());
@@ -39,14 +41,12 @@ namespace HaiyaBox.Plugin
         public void OnLoad(AssemblyLoadContext loadContext)
         {
             _automationTab.OnLoad(loadContext);
-            _debugPrintTab.OnLoad(loadContext);
             _eventRecordTab.OnLoad(loadContext);
         }
 
         public void Dispose()
         {
             _automationTab.Dispose();
-            _debugPrintTab.Dispose();
             _eventRecordTab.Dispose();
             actorControlHook?.Dispose();
         }
@@ -80,11 +80,6 @@ namespace HaiyaBox.Plugin
                     ImGui.EndTabItem();
                 }
 
-                if (ImGui.BeginTabItem("日志监听"))
-                {
-                    _debugPrintTab.Draw();
-                    ImGui.EndTabItem();
-                }
                 if (ImGui.BeginTabItem("事件记录"))
                 {
                     _eventRecordTab.Draw();

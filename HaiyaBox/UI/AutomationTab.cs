@@ -208,9 +208,6 @@ namespace HaiyaBox.UI
                 await UpdateAutoCountdown();
                 await UpdateAutoLeave();
                 await UpdateAutoQueue();
-                await UpdateAutoEnterOccult();
-                await UpdateAutoSwitchNotMaxSupJob();
-                UpdatePlayerCountInOccult();
                 ResetDutyFlag();
             }
             catch (Exception e)
@@ -907,6 +904,8 @@ namespace HaiyaBox.UI
         /// 前提条件：当前地图匹配、启用退本、在副本内且副本已完成。
         /// </summary>
         private bool _hasLootAppeared; // 是否出现过roll点界面
+        private DateTime _lootStartTime = DateTime.MinValue; // roll点开始时间
+        private const int LOOT_TIMEOUT_SECONDS = 60; // roll点超时时间（秒）
 
         private async Task UpdateAutoLeave()
         {
@@ -935,57 +934,15 @@ namespace HaiyaBox.UI
                     var info = AutomationSettings.DutyPresets.FirstOrDefault(d => d.Name == Settings.SelectedDutyName || d.Name == Settings.CustomDutyName);
                     // 判断是否极神
                     bool hasChest = info is { Category: DutyCategory.Extreme };
+                    LogHelper.Print($"[Roll点调试] 副本类型: {(hasChest ? "极神(有宝箱)" : "其他副本")}, 自动等待R点: {Settings.AutoLeaveAfterLootEnabled}");
+
                     if (hasChest)
-                        await Task.Delay(2000);
-                    //if (Settings.AutoLeaveAfterLootEnabled && hasChest && _isLootRunning)
                     {
-                        unsafe
+                        LogHelper.Print("[Roll点调试] 检测到极神副本，等待2秒让宝箱出现...");
+                        if (Settings.AutoLeaveAfterLootEnabled)
                         {
-                            var lootPtr = Loot.Instance();
-                            bool hasValidLoot = false;
-                            bool allAwarded = true;
-
-                            if (lootPtr != null && Settings.AutoLeaveAfterLootEnabled && hasChest)
-                            {
-                                var items = lootPtr->Items;
-                                for (int i = 0; i < items.Length; i++)
-                                {
-                                    var loot = items[i];
-                                    if (loot.ItemId != 0)
-                                    {
-                                        hasValidLoot = true;
-                                        if (loot.RollResult != RollResult.Awarded)
-                                        {
-                                            allAwarded = false;
-                                            break; // 还有未分配，不能退本
-                                        }
-                                    }
-                                }
-                                
-                                if (hasValidLoot && !_hasLootAppeared)
-                                {
-                                    LogHelper.Print("检测到roll点界面出现，开始等待分配");
-                                    _hasLootAppeared = true;
-                                }
-                                // 没见过有掉落物的roll点界面
-                                if (!_hasLootAppeared)
-                                    return;
-
-                                // 见过roll点界面，但是还有未分配物品
-                                if (!allAwarded)
-                                    return;
-                                
-                                _isLootRunning = false;
-                                return;
-                            }
+                            await Task.Delay(15 * 1000);
                         }
-                    }
-                    var collect = Settings.AutoLeaveAfterCollectEnabled;
-                    if (collect)
-                    {
-                        LogHelper.Print("开始收集鳞片");
-                        RemoteControlHelper.Cmd("", "/xsz-eventstart "+Settings.CollectionEnventId);
-                        await Task.Delay(3000);
                     }
                     // 否则直接延迟指定时间再退本
                     await Task.Delay(Settings.AutoLeaveDelay * 1000);
@@ -1081,7 +1038,15 @@ namespace HaiyaBox.UI
                 }
 
                 await Task.Delay(Settings.AutoQueueDelay * 1000);
-
+                // 获取队长并发送排本命令
+                var leaderName = GetPartyLeaderName();
+                if (!string.IsNullOrEmpty(leaderName))
+                {
+                    var leaderRole = RemoteControlHelper.GetRoleByPlayerName(leaderName);
+                    RemoteControlHelper.Cmd(leaderRole, "/pdr load ContentFinderCommand");
+                    RemoteControlHelper.Cmd(leaderRole, $"/pdrduty n {Settings.FinalSendDutyName}");
+                    LogHelper.Print($"自动排本：为队长 {leaderName} 发送排本命令: /pdrduty n {Settings.FinalSendDutyName}");
+                }
                 _lastAutoQueueTime = DateTime.Now;
             }
             catch (Exception e)
@@ -1093,226 +1058,7 @@ namespace HaiyaBox.UI
                 _isQueueRunning = false;
             }
         }
-
-        /// <summary>
-        /// 根据配置和当前队伍状态自动发送进岛命令。
-        /// 条件包括：启用自动进岛、足够的时间间隔、队伍状态满足要求（队伍成员均在线、不在副本中）。
-        /// 若任一条件不满足则不发送进岛命令。
-        /// </summary>
-        private async Task UpdateAutoEnterOccult()
-        {
-            if (_isEnterOccultRunning) return;
-            if (_isEnterOccultCompleted) return;
-            lock (_enterOccultLock)
-            {
-                if (_isEnterOccultRunning) return;
-                _isEnterOccultRunning = true;
-            }
-
-            try
-            {
-                // 未启用自动进岛或上次命令不足5秒则返回
-                if (!Settings.AutoEnterOccult)
-                    return;
-                if (DateTime.Now - _lastAutoQueueTime < TimeSpan.FromSeconds(5))
-                    return;
-                
-                // 剩余时间不足或锁岛
-                unsafe
-                {
-                    bool needLeave = false;
-
-                    // 获取新月岛实例
-                    var instancePtr = PublicContentOccultCrescent.GetInstance();
-                    if (instancePtr != null)
-                    {
-                        // 剩余时间判断
-                        var minutesLeft = instancePtr->ContentTimeLeft / 60.0;
-                        if (minutesLeft > 0 && minutesLeft < Settings.OccultReEnterThreshold)
-                            needLeave = true;
-                    
-                        // 判断锁岛：连续5次下降且都低于设定阈值
-                        if (_recentMaxCounts.Count == 5 && minutesLeft < 160)
-                        {
-                            var arr = _recentMaxCounts.ToArray();
-                            bool canLeaveByLock = arr.All(x => x < Settings.OccultLockThreshold) && arr[0] >= arr[1] && arr[1] >= arr[2] && arr[2] >= arr[3] && arr[3] >= arr[4];
-                            if (canLeaveByLock)
-                                needLeave = true;
-                        }
-                        
-                        // 命中黑名单的人数判断
-                        if (BlackListTab.LastHitCount >= Settings.OccultBlackListThreshold)
-                            needLeave = true;
-                        
-                        // 力之塔
-                        foreach (ref readonly var events in instancePtr->DynamicEventContainer.Events)
-                        {
-                            if (events is { DynamicEventId: 48, State: DynamicEventState.Battle })
-                            {
-                                needLeave = true;
-                                break;
-                            }
-                        }
-                        
-                        // 最终退岛动作必须在大水晶边上
-                        if (needLeave && Core.Resolve<MemApiZoneInfo>().GetCurrTerrId() == 1252 && Vector3.Distance(Core.Me.Position, new Vector3(828, 73, -696)) < 8 && Svc.ClientState.LocalPlayer != null)
-                        {
-                            LeaveDuty();
-                            _lastAutoQueueTime = DateTime.Now;
-                            _recentMaxCounts.Clear();
-                            return;
-                        }
-                    }
-                }
-                
-                // 已经在排本队列中则返回
-                if (Svc.Condition[ConditionFlag.InDutyQueue])
-                    return;
-                if (Core.Resolve<MemApiDuty>().IsBoundByDuty())
-                    return;
-
-                // 检查跨服队伍中是否所有成员均在线且未在副本中，否则退出
-                var partyStatus = GetCrossRealmPartyStatus();
-                var invalidNames = partyStatus.Where(s => !s.IsOnline || s.IsInDuty)
-                    .Select(s => s.Name)
-                    .ToList();
-                if (invalidNames.Any())
-                {
-                    LogHelper.Print("玩家不在线或在副本中：" + string.Join(", ", invalidNames));
-                    await Task.Delay(1000);
-                    return;
-                }
-
-                if (string.IsNullOrEmpty(RemoteControlHelper.RoomId) && PartyHelper.Party.Count == 1)
-                {
-                    if (Core.Resolve<MemApiZoneInfo>().GetCurrTerrId() != 1252)
-                    {
-                        ChatHelper.SendMessage("/pdr load FieldEntryCommand");
-                        ChatHelper.SendMessage("/pdrfe ocs");
-                        // ChatHelper.SendMessage("/xlenableplugin BOCCHI");
-                        
-                        ChatHelper.SendMessage("/xlenableplugin BOCCHI");
-                        ChatHelper.SendMessage("/pdr unload FasterTerritoryTransport");
-                        ChatHelper.SendMessage("/pdr unload NoUIFade");
-                        ChatHelper.SendMessage("/pdr unload OptimizedInteraction");
-                        ChatHelper.SendMessage("/pdrspeed 1");
-                        ChatHelper.SendMessage("/aeTargetSelector off");
-                        
-                        await Task.Delay(2000);
-                        ChatHelper.SendMessage("/bocchiillegal on");
-                        
-                    }
-                }
-                
-                var leaderName = GetPartyLeaderName();
-                if (!string.IsNullOrEmpty(leaderName))
-                {
-
-                    if (Core.Resolve<MemApiZoneInfo>().GetCurrTerrId() != 1252)
-                    {
-                        var leaderRole = RemoteControlHelper.GetRoleByPlayerName(leaderName);
-                        RemoteControlHelper.Cmd(leaderRole, "/pdr load FieldEntryCommand");
-                        RemoteControlHelper.Cmd(leaderRole, "/pdrfe ocs");
-                        // RemoteControlHelper.Cmd(, "/xlenableplugin BOCCHI");
-                        
-                        RemoteControlHelper.Cmd("", "/xlenableplugin BOCCHI");
-                        RemoteControlHelper.Cmd("", "/pdr unload FasterTerritoryTransport");
-                        RemoteControlHelper.Cmd("", "/pdr unload NoUIFade");
-                        RemoteControlHelper.Cmd("", "/pdr unload OptimizedInteraction");
-                        RemoteControlHelper.Cmd("", "/pdrspeed 1");
-                        RemoteControlHelper.Cmd("", "/aeTargetSelector off");
-                        
-                        await Task.Delay(2000);
-                        RemoteControlHelper.Cmd("", "/bocchiillegal on");
-                    }
-                }
-                _lastAutoQueueTime = DateTime.Now;
-                
-                // 退岛方法
-                async void LeaveDuty()
-                {
-                    if (string.IsNullOrEmpty(RemoteControlHelper.RoomId) && PartyHelper.Party.Count == 1)
-                    {
-                        ChatHelper.SendMessage("/bocchiillegal off");
-                        // ChatHelper.SendMessage("/xldisableplugin BOCCHI");
-                        await Task.Delay(3000);
-                        ChatHelper.SendMessage("/pdr load InstantLeaveDuty");
-                        ChatHelper.SendMessage("/pdr leaveduty");
-                    }
-                    else if (!string.IsNullOrEmpty(RemoteControlHelper.RoomId))
-                    {
-                        RemoteControlHelper.Cmd("", "/bocchiillegal off");
-                        // RemoteControlHelper.Cmd("", "/xldisableplugin BOCCHI");
-                        await Task.Delay(3000);
-                        RemoteControlHelper.Cmd("", "/pdr load InstantLeaveDuty");
-                        RemoteControlHelper.Cmd("", "/pdr leaveduty");
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                LogHelper.Print(e.Message);
-            }
-            finally
-            {
-                _isEnterOccultRunning = false;
-            }
-        }
-
-        /// <summary>
-        /// 新月岛自动切换到未满级的辅助职业。
-        /// </summary>
-        private async Task UpdateAutoSwitchNotMaxSupJob()
-        {
-            if (_isSwitchNotMaxSupJobRunning) return;
-            if (_isSwitchNotMaxSupJobCompleted) return;
-            lock (_switchNotMaxSupJobLock)
-            {
-                if (_isSwitchNotMaxSupJobRunning) return;
-                _isSwitchNotMaxSupJobRunning = true;
-            }
-
-            try
-            {
-                if (!Settings.AutoSwitchNotMaxSupJob)
-                    return;
-                // 如果不在新月岛内或距离大水晶太远则不切换
-                if (Core.Resolve<MemApiZoneInfo>().GetCurrTerrId() != 1252 || Vector3.Distance(Core.Me.Position, new Vector3(828, 73, -696)) > 8)
-                    return;
-                
-                await Task.Delay(5000);
-                unsafe
-                {
-                    var statePtr = PublicContentOccultCrescent.GetState();
-                    if (statePtr == null)
-                        return;
-                    var levels = statePtr->SupportJobLevels;
-                    byte currentJob = statePtr->CurrentSupportJob;
-                    // 当前职业未满级则不切换
-                     if (levels[currentJob] < AutomationSettings.SupportJobData[currentJob].MaxLevel)
-                         return;
-                    for (byte jobId = 0; jobId < AutomationSettings.SupportJobData.Count; jobId++)
-                    {
-                        var (name, maxLevel) = AutomationSettings.SupportJobData[jobId];
-                        byte level = levels[jobId];
-                        // 已解锁且未满级且不是当前职业，跳过自由人
-                        if (jobId == 0 || level <= 0 || level >= maxLevel || jobId == currentJob)
-                            continue;
-                        PublicContentOccultCrescent.ChangeSupportJob(jobId);
-                        LogHelper.Print($"自动切换到 {name} (Lv.{level} / Max {maxLevel})");
-                        return;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                LogHelper.Print(e.Message);
-            }
-            finally
-            {
-                _isSwitchNotMaxSupJobRunning = false;
-            }
-        }
+        
         
         /// <summary>
         /// 重置副本完成标志 _dutyCompleted，当检测到玩家已经不在副本中时调用，
@@ -1338,43 +1084,6 @@ namespace HaiyaBox.UI
                 _isEnterOccultCompleted = false;
                 _isSwitchNotMaxSupJobCompleted = false;
                 _hasLootAppeared = false;
-            }
-            catch (Exception e)
-            {
-                LogHelper.Print(e.Message);
-            }
-        }
-
-        /// <summary>
-        /// 定期采样新月岛区域人数。
-        /// </summary>
-        private unsafe void UpdatePlayerCountInOccult()
-        {
-            try
-            {
-                // 获取区域人数
-                var proxy = (InfoProxy24*)InfoModule.Instance()->GetInfoProxyById((InfoProxyId)24);
-                if (proxy != null && proxy->EntryCount > 0)
-                {
-                    // 每10秒采样一次区间最大人数 
-                    if ((DateTime.Now - _lastSampleTime).TotalSeconds < 10)
-                    {
-                        // 区间内持续更新最大人数
-                        _currentIntervalMax = Math.Max(_currentIntervalMax, proxy->EntryCount);
-                    }
-                    else
-                    {
-                        // 区间结束，记录当前区间最大人数
-                        _lastSampleTime = DateTime.Now;
-                        if (_currentIntervalMax > 0)
-                        {
-                            if (_recentMaxCounts.Count >= 5)
-                                _recentMaxCounts.Dequeue();
-                            _recentMaxCounts.Enqueue(_currentIntervalMax);
-                        }
-                        _currentIntervalMax = 0;
-                    }
-                }
             }
             catch (Exception e)
             {
