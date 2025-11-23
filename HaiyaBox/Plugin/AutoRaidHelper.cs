@@ -18,6 +18,7 @@ namespace HaiyaBox.Plugin
         private readonly FaGeneralSettingTab _faGeneralSettingTab = new();
         private readonly EventRecordTab _eventRecordTab = new();
         private readonly BlackListTab _blackListTab = new();
+        private readonly DangerAreaTab _dangerAreaTab = new();
         #region IAEPlugin Implementation
 
 
@@ -56,6 +57,7 @@ namespace HaiyaBox.Plugin
             _geometryTab.Update();
             _automationTab.Update();
             _blackListTab.Update();
+            _dangerAreaTab.Update();
         }
 
         public void OnPluginUI()
@@ -88,6 +90,12 @@ namespace HaiyaBox.Plugin
                 if (ImGui.BeginTabItem("黑名单管理"))
                 {
                     _blackListTab.Draw();
+                    ImGui.EndTabItem();
+                }
+
+                if (ImGui.BeginTabItem("危险区域"))
+                {
+                    _dangerAreaTab.Draw();
                     ImGui.EndTabItem();
                 }
 

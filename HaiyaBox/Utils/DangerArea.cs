@@ -1,5 +1,16 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+
 namespace HaiyaBox.Utils
 {
+    // 限制范围类型枚举（新增）
+    public enum LimitRangeType
+    {
+        Rectangle, // 矩形范围
+        Circle     // 圆形范围
+    }
     public abstract class DangerArea
     {
         public abstract bool IsPointInDanger(Point point);
@@ -50,54 +61,77 @@ namespace HaiyaBox.Utils
         {
             return $"({X:F1}, {Y:F1})";
         }
+
+        // Vector3 坐标转换方法
+        public static Point FromVector3(Vector3 v3)
+        {
+            return new Point(v3.X, v3.Z);
+        }
+
+        public static Vector3 ToVector3(Point point)
+        {
+            return new Vector3((float)point.X, 0, (float)point.Y);
+        }
     }
 
     public class SafePointCalculator
     {
         /// <summary>
-        /// 查找安全点（分两组：贴近参考点+自由分布）
+        /// 查找安全点（支持矩形/圆形限制范围）
         /// </summary>
-        /// <param name="limitMinX">限制范围左边界</param>
-        /// <param name="limitMaxX">限制范围右边界</param>
-        /// <param name="limitMinY">限制范围下边界</param>
-        /// <param name="limitMaxY">限制范围上边界</param>
+        /// <param name="limitType">限制范围类型（矩形/圆形）</param>
+        /// <param name="rectLimitParams">矩形范围参数（minX, maxX, minY, maxY）</param>
+        /// <param name="circleLimitParams">圆形范围参数（圆心, 半径）</param>
         /// <param name="dangerAreas">危险区域列表</param>
         /// <param name="referencePoint">参考点</param>
         /// <param name="minSafePointDistance">安全点之间最小间距</param>
         /// <param name="closeToRefCount">需要贴近参考点的数量</param>
-        /// <param name="maxFarDistance">自由分布组的最大远离距离（相对于参考点）</param>
+        /// <param name="maxFarDistance">自由分布组的最大远离距离</param>
         /// <param name="sampleStep">采样步长</param>
         /// <param name="totalSafePointCount">总安全点数量</param>
         /// <returns>分组合并后的安全点列表</returns>
         public List<Point> FindSafePoints(
-            double limitMinX, double limitMaxX,
-            double limitMinY, double limitMaxY,
-            List<DangerArea> dangerAreas,
-            Point referencePoint,
+            LimitRangeType limitType,
+            Tuple<Point, double, double> rectLimitParams = null, // 矩形参数：(中心, 长度, 宽度)
+            Tuple<Point, double> circleLimitParams = null, // 圆形参数：(圆心, 半径)
+            List<DangerArea> dangerAreas = null,
+            Point referencePoint = null,
             double minSafePointDistance = 3.0,
-            int closeToRefCount = 3, // 核心：3个点优先贴近参考点
-            double maxFarDistance = 25.0, // 核心：自由分布组距参考点≤25单位
+            int closeToRefCount = 3,
+            double maxFarDistance = 25.0,
             double sampleStep = 0.5,
             int totalSafePointCount = 8)
         {
-            // 1. 网格采样+筛选基础安全点（不在危险区）
+            // 校验参数合法性
+            if (limitType == LimitRangeType.Rectangle && rectLimitParams == null)
+                throw new ArgumentNullException(nameof(rectLimitParams), "矩形范围需传入rectLimitParams");
+            if (limitType == LimitRangeType.Circle && circleLimitParams == null)
+                throw new ArgumentNullException(nameof(circleLimitParams), "圆形范围需传入circleLimitParams");
+            dangerAreas ??= new List<DangerArea>();
+            referencePoint ??= new Point(0, 0);
+
+            // 1. 网格采样（根据限制范围动态计算采样边界，避免无效采样）
+            (double sampleMinX, double sampleMaxX, double sampleMinY, double sampleMaxY) =
+                GetSampleBounds(limitType, rectLimitParams, circleLimitParams);
             List<Point> allSamplePoints = new List<Point>();
-            for (double x = limitMinX; x <= limitMaxX; x += sampleStep)
+            for (double x = sampleMinX; x <= sampleMaxX; x += sampleStep)
             {
-                for (double y = limitMinY; y <= limitMaxY; y += sampleStep)
+                for (double y = sampleMinY; y <= sampleMaxY; y += sampleStep)
                 {
                     allSamplePoints.Add(new Point(x, y));
                 }
             }
 
+            // 2. 筛选基础安全点：① 在限制范围内 ② 不在任何危险区
             List<Point> baseSafePoints = allSamplePoints
+                .Where(p => IsPointInLimitRange(p, limitType, rectLimitParams, circleLimitParams)) // 新增：限制范围判定
                 .Where(p => !dangerAreas.Any(area => area.IsPointInDanger(p)))
                 .ToList();
 
             if (baseSafePoints.Count == 0)
-                throw new Exception("无可用安全点，请调整参数");
+                throw new Exception("无可用安全点，请调整参数（如扩大范围、缩小危险区、减小采样步长）");
 
-            // 2. 第一组：优先贴近参考点的安全点（按距离排序+间距筛选）
+            // 3. 第一组：优先贴近参考点的安全点
             List<Point> closeToRefPoints = new List<Point>();
             var sortedByRefDistance = baseSafePoints.OrderBy(p => p.GetDistanceTo(referencePoint)).ToList();
             foreach (var point in sortedByRefDistance)
@@ -110,53 +144,112 @@ namespace HaiyaBox.Utils
                 }
             }
 
-            // 3. 第二组：自由分布安全点（距参考点≤maxFarDistance+间距筛选）
+            // 4. 第二组：自由分布安全点
             List<Point> freePoints = new List<Point>();
-            // 筛选出：在maxFarDistance范围内 + 不在第一组 + 满足间距
             var candidateFreePoints = baseSafePoints
                 .Where(p => p.GetDistanceTo(referencePoint) <= maxFarDistance)
-                .Except(closeToRefPoints) // 排除已选的贴近点
-                .OrderBy(_ => Guid.NewGuid()) // 随机排序，实现自由分布
+                .Except(closeToRefPoints)
+                .OrderBy(_ => Guid.NewGuid()) // 随机排序，自由分布
                 .ToList();
 
             foreach (var point in candidateFreePoints)
             {
-                // 需同时满足：与第一组、第二组已选点的间距≥阈值
                 bool isFarEnough = closeToRefPoints.All(p => p.GetDistanceTo(point) >= minSafePointDistance)
-                                 && freePoints.All(p => p.GetDistanceTo(point) >= minSafePointDistance);
+                                   && freePoints.All(p => p.GetDistanceTo(point) >= minSafePointDistance);
                 if (isFarEnough)
                 {
                     freePoints.Add(point);
-                    // 满足总数量后停止
                     if (closeToRefPoints.Count + freePoints.Count == totalSafePointCount)
                         break;
                 }
             }
 
-            // 4. 合并结果（贴近组在前，自由组在后）
+            // 5. 合并结果
             var result = closeToRefPoints.Concat(freePoints).ToList();
             if (result.Count < totalSafePointCount)
                 Console.WriteLine($"警告：仅找到{result.Count}个符合要求的安全点（需{totalSafePointCount}个），可缩小最小间距或调整maxFarDistance");
 
             return result;
         }
+
+        /// <summary>
+        /// 辅助方法：判断点是否在限制范围内（矩形/圆形）
+        /// </summary>
+        private bool IsPointInLimitRange(
+            Point point,
+            LimitRangeType limitType,
+            Tuple<Point, double, double> rectParams,
+            Tuple<Point, double> circleParams)
+        {
+            switch (limitType)
+            {
+                case LimitRangeType.Rectangle:
+                    {
+                        var center = rectParams.Item1;
+                        var length = rectParams.Item2; // 长度 (X方向)
+                        var width = rectParams.Item3; // 宽度 (Y方向)
+
+                        var minX = center.X - length / 2.0;
+                        var maxX = center.X + length / 2.0;
+                        var minY = center.Y - width / 2.0;
+                        var maxY = center.Y + width / 2.0;
+
+                        return point.X >= minX && point.X <= maxX && point.Y >= minY && point.Y <= maxY;
+                    }
+                case LimitRangeType.Circle:
+                    return point.GetDistanceTo(circleParams.Item1) <= circleParams.Item2;
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>
+        /// 辅助方法：计算采样边界（避免超出限制范围的无效采样）
+        /// </summary>
+        private (double minX, double maxX, double minY, double maxY) GetSampleBounds(
+            LimitRangeType limitType,
+            Tuple<Point, double, double> rectParams,
+            Tuple<Point, double> circleParams)
+        {
+            switch (limitType)
+            {
+                case LimitRangeType.Rectangle:
+                    {
+                        var center = rectParams.Item1;
+                        var length = rectParams.Item2;
+                        var width = rectParams.Item3;
+
+                        var minX = center.X - length / 2.0;
+                        var maxX = center.X + length / 2.0;
+                        var minY = center.Y - width / 2.0;
+                        var maxY = center.Y + width / 2.0;
+
+                        return (minX, maxX, minY, maxY);
+                    }
+                case LimitRangeType.Circle:
+                    return (circleParams.Item1.X - circleParams.Item2, circleParams.Item1.X + circleParams.Item2,
+                        circleParams.Item1.Y - circleParams.Item2, circleParams.Item1.Y + circleParams.Item2);
+                default:
+                    return (0, 0, 0, 0);
+            }
+        }
     }
 
-    // 示例调用（35×35范围+贴合需求）
+/*// 示例调用（圆形限制范围+35×35等效场景）
     class Program
     {
         static void Main(string[] args)
         {
-            // 1. 35×35限制范围
-            double limitMinX = 0, limitMaxX = 35;
-            double limitMinY = 0, limitMaxY = 35;
-            Point referencePoint = new Point(18, 18); // 参考点（中心）
+            // 1. 配置参数（圆形限制范围示例：圆心(17.5,17.5)，半径17.5 → 等效35×35正方形的外接圆）
+            LimitRangeType limitType = LimitRangeType.Circle;
+            var circleLimit = new Tuple<Point, double>(new Point(17.5, 17.5), 17.5); // 圆形范围：圆心+半径
+            Point referencePoint = new Point(18, 18); // 参考点
 
-            // 2. 核心参数（按需调整）
-            int totalSafePointCount = 8; // 总安全点数量
-            int closeToRefCount = 3; // 3个点贴近参考点
-            double minSafePointDistance = 3.0; // 安全点间距≥3单位
-            double maxFarDistance = 25.0; // 自由组距参考点≤25单位
+            // 2. 核心参数
+            int totalSafePointCount = 8;
+            int closeToRefCount = 3;
+            double minSafePointDistance = 3.0;
+            double maxFarDistance = 25.0;
             double sampleStep = 0.5;
 
             // 3. 危险区域（示例）
@@ -170,12 +263,18 @@ namespace HaiyaBox.Utils
             // 4. 计算安全点
             SafePointCalculator calculator = new SafePointCalculator();
             List<Point> safePoints = calculator.FindSafePoints(
-                limitMinX, limitMaxX, limitMinY, limitMaxY,
-                dangerAreas, referencePoint,
-                minSafePointDistance, closeToRefCount,
-                maxFarDistance, sampleStep, totalSafePointCount);
+                limitType: limitType,
+                circleLimitParams: circleLimit,
+                dangerAreas: dangerAreas,
+                referencePoint: referencePoint,
+                minSafePointDistance: minSafePointDistance,
+                closeToRefCount: closeToRefCount,
+                maxFarDistance: maxFarDistance,
+                sampleStep: sampleStep,
+                totalSafePointCount: totalSafePointCount);
 
-            // 5. 输出结果（标注分组）
+            // 5. 输出结果
+            Console.WriteLine($"限制范围：圆形（圆心{circleLimit.Item1}，半径{circleLimit.Item2:F1}）");
             Console.WriteLine($"参考点：{referencePoint}");
             Console.WriteLine($"配置：{closeToRefCount}个贴近点 + {totalSafePointCount - closeToRefCount}个自由分布点（距参考点≤{maxFarDistance}单位）");
             Console.WriteLine($"安全点列表（前{closeToRefCount}个为贴近参考点）：");
@@ -188,5 +287,5 @@ namespace HaiyaBox.Utils
 
             Console.ReadKey();
         }
-    }
+    }*/
 }
