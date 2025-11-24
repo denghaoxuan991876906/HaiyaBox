@@ -5,6 +5,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System;
 using AEAssist;
+using AEAssist.CombatRoutine.Module.Target;
+using AEAssist.Extension;
 using AEAssist.Helper;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Objects.Types;
@@ -44,7 +46,7 @@ namespace HaiyaBox.UI
 
         // 参考点配置
         private Vector3 _referencePoint = Vector3.Zero;
-        private string _referencePointInput = "0,0,0";
+        private string _referencePointInput = "100,0,100";
 
         // 计算参数
         private int _closeToRefCount = 3;
@@ -56,15 +58,15 @@ namespace HaiyaBox.UI
         private int _limitRangeType = 0; // 0: 矩形, 1: 圆形
 
         // 矩形范围参数
-        private Vector3 _limitRectCenter = new Vector3(17.5f, 0, 17.5f);
+        private Vector3 _limitRectCenter = new Vector3(100,0,100);
         private double _limitRectLength = 35.0; // 长度 (X方向)
         private double _limitRectWidth = 35.0;   // 宽度 (Y方向)
-        private string _limitRectCenterInput = "17.5,0,17.5";
+        private string _limitRectCenterInput = "100,0,100";
 
         // 圆形范围参数
-        private Vector3 _limitCircleCenter = new Vector3(17.5f, 0, 17.5f);
+        private Vector3 _limitCircleCenter = new Vector3(100,0,100);
         private double _limitCircleRadius = 17.5;
-        private string _limitCircleCenterInput = "17.5,0,17.5";
+        private string _limitCircleCenterInput = "100,0,100";
 
         // 可视化相关
         private readonly DangerAreaRenderer _dangerAreaRenderer = new();
@@ -133,14 +135,14 @@ namespace HaiyaBox.UI
                 if (_dangerAreaType == 0)
                 {
                     // 圆形配置
-                    ImGui.InputFloat("半径", ref _circleRadius, 0.5f, 1.0f);
+                    ImGui.InputFloat("半径##圆形", ref _circleRadius, 0.5f, 1.0f);
                 }
                 else
                 {
                     // 矩形配置
-                    ImGui.InputFloat("宽度", ref _rectWidth, 0.5f, 1.0f);
-                    ImGui.InputFloat("高度", ref _rectHeight, 0.5f, 1.0f);
-                    ImGui.InputFloat("旋转角度（度）", ref _rectRotation, 1.0f, 5.0f);
+                    ImGui.InputFloat("宽度##矩形", ref _rectWidth, 0.5f, 1.0f);
+                    ImGui.InputFloat("高度##矩形", ref _rectHeight, 0.5f, 1.0f);
+                    ImGui.InputFloat("旋转角度（度）##矩形", ref _rectRotation, 1.0f, 5.0f);
                     ImGui.SameLine();
                     if (ImGui.SmallButton("归零##ResetRotation"))
                     {
@@ -150,9 +152,9 @@ namespace HaiyaBox.UI
 
                 // 位置设置
                 ImGui.Text("危险区域位置:");
-                ImGui.InputText("坐标 (x,y,z)", ref _tempDangerAreaPosInput, 50);
+                ImGui.InputText("坐标 (x,y,z)##矩形中心", ref _tempDangerAreaPosInput, 50);
 
-                if (ImGui.Button("设置位置"))
+                if (ImGui.Button("设置位置##矩形中心"))
                 {
                     if (TryParseVector3(_tempDangerAreaPosInput, out Vector3 pos))
                     {
@@ -228,12 +230,12 @@ namespace HaiyaBox.UI
         /// </summary>
         private void DrawReferencePointSection()
         {
-            if (ImGui.CollapsingHeader("参考点设置", ImGuiTreeNodeFlags.DefaultOpen))
+            if (ImGui.CollapsingHeader("参考点设置##参考点", ImGuiTreeNodeFlags.DefaultOpen))
             {
-                ImGui.Text("参考点坐标:");
-                ImGui.InputText("坐标 (x,y,z)", ref _referencePointInput, 50);
+                ImGui.Text("参考点坐标:##参考点");
+                ImGui.InputText("坐标 (x,y,z)##参考点", ref _referencePointInput, 50);
 
-                if (ImGui.Button("设置参考点"))
+                if (ImGui.Button("设置参考点##参考点"))
                 {
                     if (TryParseVector3(_referencePointInput, out Vector3 point))
                     {
@@ -244,9 +246,9 @@ namespace HaiyaBox.UI
                 }
 
                 ImGui.SameLine();
-                if (ImGui.Button("获取玩家位置"))
+                if (ImGui.Button("获取BOSS位置"))
                 {
-                    var player = Svc.ClientState.LocalPlayer;
+                    var player = TargetMgr.Instance.Enemys.Values.FirstOrDefault(e => e.IsBoss() && e.IsTargetable);
                     if (player != null)
                     {
                         _referencePoint = player.Position;
