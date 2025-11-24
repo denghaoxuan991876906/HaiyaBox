@@ -19,6 +19,7 @@ namespace HaiyaBox.Plugin
         private readonly EventRecordTab _eventRecordTab = new();
         private readonly BlackListTab _blackListTab = new();
         private readonly DangerAreaTab _dangerAreaTab = new();
+        private readonly TreasureOpenerService _treasureOpener = TreasureOpenerService.Instance;
         #region IAEPlugin Implementation
 
 
@@ -32,6 +33,7 @@ namespace HaiyaBox.Plugin
             TriggerMgr.Instance.Add("嗨呀AE工具", new 检测目标位置().GetType());
             TriggerMgr.Instance.Add("嗨呀AE工具", new 启动bmr().GetType());
             actorControlHook = new ActorControlHook();
+            _treasureOpener.TryInitialize();
             return new PluginSetting
             {
                 Name = "嗨呀AE工具",
@@ -49,7 +51,9 @@ namespace HaiyaBox.Plugin
         {
             _automationTab.Dispose();
             _eventRecordTab.Dispose();
+            _dangerAreaTab.Dispose();
             actorControlHook?.Dispose();
+            _treasureOpener.Dispose();
         }
 
         public void Update()
@@ -57,7 +61,8 @@ namespace HaiyaBox.Plugin
             _geometryTab.Update();
             _automationTab.Update();
             _blackListTab.Update();
-            //_dangerAreaTab.Update();
+            _dangerAreaTab.Update();
+            _treasureOpener.Update();
         }
 
         public void OnPluginUI()

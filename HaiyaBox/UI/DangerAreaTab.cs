@@ -11,6 +11,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using ECommons.DalamudServices;
 using HaiyaBox.Settings;
+using HaiyaBox.Rendering;
 using HaiyaBox.Utils;
 
 namespace HaiyaBox.UI
@@ -63,6 +64,12 @@ namespace HaiyaBox.UI
         private double _limitCircleRadius = 17.5;
         private string _limitCircleCenterInput = "17.5,0,17.5";
 
+        // 可视化相关
+        private readonly DangerAreaRenderer _dangerAreaRenderer = new();
+        private readonly DangerAreaRenderConfig _renderConfig = DangerAreaRenderConfig.Default;
+        private bool _overlayEnabled;
+        private bool _overlayDirty = true;
+
         #endregion
 
         #region Public Methods
@@ -72,6 +79,7 @@ namespace HaiyaBox.UI
         /// </summary>
         public void Update()
         {
+            SyncOverlayIfNeeded();
         }
 
         /// <summary>
@@ -85,6 +93,12 @@ namespace HaiyaBox.UI
             DrawCalculationParamsSection();
             DrawCalculationSection();
             DrawResultsSection();
+            DrawVisualizationSection();
+        }
+
+        public void Dispose()
+        {
+            _dangerAreaRenderer.Dispose();
         }
 
         #endregion
@@ -141,6 +155,7 @@ namespace HaiyaBox.UI
                 {
                     BattleDataInstance.TempDangerAreas.Clear();
                     BattleDataInstance.IsCalculated = false;
+                    MarkOverlayDirty();
                 }
 
                 // 显示当前危险区域数量
@@ -165,6 +180,7 @@ namespace HaiyaBox.UI
                     {
                         _referencePoint = point;
                         BattleDataInstance.ReferencePoint = point;
+                        MarkOverlayDirty();
                     }
                 }
 
@@ -177,6 +193,7 @@ namespace HaiyaBox.UI
                         _referencePoint = player.Position;
                         BattleDataInstance.ReferencePoint = player.Position;
                         _referencePointInput = $"{player.Position.X:F1},{player.Position.Y:F1},{player.Position.Z:F1}";
+                        MarkOverlayDirty();
                     }
                 }
 
@@ -270,6 +287,7 @@ namespace HaiyaBox.UI
                 {
                     BattleDataInstance.SafePoints.Clear();
                     BattleDataInstance.IsCalculated = false;
+                    MarkOverlayDirty();
                 }
 
                 ImGui.Spacing();
@@ -301,6 +319,30 @@ namespace HaiyaBox.UI
                     ImGui.Text("尚未计算安全点或计算无结果");
                 }
             }
+        }
+
+        private void DrawVisualizationSection()
+        {
+            if (ImGui.CollapsingHeader("危险区域可视化", ImGuiTreeNodeFlags.DefaultOpen))
+            {
+                bool enabled = _overlayEnabled;
+                if (ImGui.Checkbox("在战斗画面中绘制危险区域", ref enabled))
+                {
+                    ToggleOverlay(enabled);
+                }
+
+                ImGui.SameLine();
+                if (ImGui.Button("刷新绘制##DangerAreaOverlay"))
+                {
+                    MarkOverlayDirty();
+                }
+
+                var statusColor = _overlayEnabled ? new Vector4(0.4f, 0.85f, 0.4f, 1f) : new Vector4(0.85f, 0.4f, 0.4f, 1f);
+                ImGui.TextColored(statusColor, _overlayEnabled ? "绘制已开启" : "绘制已关闭");
+                ImGui.Spacing();
+            }
+
+            SyncOverlayIfNeeded();
         }
 
         #endregion
@@ -338,6 +380,7 @@ namespace HaiyaBox.UI
             }
 
             BattleDataInstance.IsCalculated = false;
+            MarkOverlayDirty();
         }
 
         /// <summary>
@@ -416,11 +459,37 @@ namespace HaiyaBox.UI
                 }
 
                 BattleDataInstance.IsCalculated = true;
+                MarkOverlayDirty();
             }
             catch (Exception ex)
             {
                 ImGui.Text($"计算失败: {ex.Message}");
             }
+        }
+
+        private void ToggleOverlay(bool enabled)
+        {
+            if (_overlayEnabled == enabled) return;
+            _overlayEnabled = enabled;
+            _dangerAreaRenderer.Enabled = enabled;
+            if (enabled)
+            {
+                MarkOverlayDirty();
+                SyncOverlayIfNeeded();
+            }
+        }
+
+        private void MarkOverlayDirty()
+        {
+            _overlayDirty = true;
+        }
+
+        private void SyncOverlayIfNeeded()
+        {
+            if (!_overlayEnabled || !_overlayDirty) return;
+            var payload = DangerAreaDisplayBuilder.Build(BattleDataInstance, _renderConfig);
+            _dangerAreaRenderer.UpdateObjects(payload);
+            _overlayDirty = false;
         }
 
         /// <summary>

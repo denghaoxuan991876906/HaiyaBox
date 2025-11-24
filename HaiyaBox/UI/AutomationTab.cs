@@ -9,13 +9,16 @@ using AEAssist.Helper;
 using AEAssist.MemoryApi;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.Text;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using HaiyaBox.Settings;
+using HaiyaBox.Plugin;
 using HaiyaBox.Utils;
 using static FFXIVClientStructs.FFXIV.Client.UI.Info.InfoProxyCommonList.CharacterData.OnlineStatus;
 using Action = System.Action;
@@ -337,6 +340,7 @@ namespace HaiyaBox.UI
                     FullAutoSettings.Instance.Save();
                 }
             }
+
             //【遥控按钮】
 
             ImGui.Separator();
@@ -906,6 +910,8 @@ namespace HaiyaBox.UI
         private bool _hasLootAppeared; // 是否出现过roll点界面
         private DateTime _lootStartTime = DateTime.MinValue; // roll点开始时间
         private const int LOOT_TIMEOUT_SECONDS = 60; // roll点超时时间（秒）
+        private static readonly TimeSpan TreasureOpenTimeout = TimeSpan.FromSeconds(15);
+        private const int TreasurePostOpenDelayMs = 10_000;
 
         private async Task UpdateAutoLeave()
         {
@@ -939,9 +945,18 @@ namespace HaiyaBox.UI
                     if (hasChest)
                     {
                         LogHelper.Print("[Roll点调试] 检测到极神副本，等待2秒让宝箱出现...");
-                        if (Settings.AutoLeaveAfterLootEnabled)
+                        await Task.Delay(5 * 1000);
+                        if (Settings.AutoLeaveAfterLootEnabled && HasTreasureAvailable())
                         {
-                            await Task.Delay(15 * 1000);
+                            bool chestOpened = await TryOpenTreasureBeforeLeaveAsync();
+                            LogHelper.Print(chestOpened
+                                ? "[Roll点调试] 宝箱已自动开启，等待10秒再退本。"
+                                : "[Roll点调试] 未能自动开启宝箱，按超时流程等待10秒。");
+                            await Task.Delay(TreasurePostOpenDelayMs);
+                        }
+                        else if (Settings.AutoLeaveAfterLootEnabled)
+                        {
+                            LogHelper.Print("[Roll点调试] 未检测到宝箱，跳过自动开箱流程。");
                         }
                     }
                     // 否则直接延迟指定时间再退本
@@ -959,6 +974,44 @@ namespace HaiyaBox.UI
             {
                 _isLeaveRunning = false;
             }
+        }
+
+        private static async Task<bool> TryOpenTreasureBeforeLeaveAsync()
+        {
+            try
+            {
+                var timeoutAt = DateTime.UtcNow + TreasureOpenTimeout;
+                while (DateTime.UtcNow < timeoutAt)
+                {
+                    if (TreasureOpenerService.Instance.TryOpenTreasureOnce())
+                        return true;
+                    await Task.Delay(500);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogHelper.PrintError($"自动开箱流程异常: {ex.Message}");
+            }
+
+            return false;
+        }
+
+        private static unsafe bool HasTreasureAvailable()
+        {
+            foreach (var obj in Svc.Objects)
+            {
+                if (obj.ObjectKind != Dalamud.Game.ClientState.Objects.Enums.ObjectKind.Treasure || !obj.IsTargetable || obj.Address == IntPtr.Zero)
+                    continue;
+
+                var treasure = (Treasure*)obj.Address;
+                if (treasure == null)
+                    continue;
+
+                if ((((byte)treasure->Flags) & 3) == 0)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <summary>
