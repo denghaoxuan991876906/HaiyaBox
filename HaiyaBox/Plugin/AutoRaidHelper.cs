@@ -57,7 +57,7 @@ namespace HaiyaBox.Plugin
             _geometryTab.Update();
             _automationTab.Update();
             _blackListTab.Update();
-            _dangerAreaTab.Update();
+            //_dangerAreaTab.Update();
         }
 
         public void OnPluginUI()

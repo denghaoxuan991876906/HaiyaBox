@@ -37,7 +37,6 @@ namespace HaiyaBox.UI
         private float _circleRadius = 5.0f;
         private float _rectWidth = 10.0f;
         private float _rectHeight = 10.0f;
-        private float _rectAngle = 0.0f; // 矩形角度（度）
         private Vector3 _tempDangerAreaPos = Vector3.Zero;
 
         // 参考点配置
@@ -73,7 +72,6 @@ namespace HaiyaBox.UI
         /// </summary>
         public void Update()
         {
-            UpdateVisualization();
         }
 
         /// <summary>
@@ -126,7 +124,6 @@ namespace HaiyaBox.UI
                     // 矩形配置
                     ImGui.InputFloat("宽度", ref _rectWidth, 0.5f, 1.0f);
                     ImGui.InputFloat("高度", ref _rectHeight, 0.5f, 1.0f);
-                    ImGui.InputFloat("角度 (度)", ref _rectAngle, 5.0f, 10.0f);
                 }
 
                 // 位置设置
@@ -449,127 +446,6 @@ namespace HaiyaBox.UI
                 // 解析失败，返回false
             }
             return false;
-        }
-
-        /// <summary>
-        /// 更新可视化显示（安全点和危险区域）。
-        /// </summary>
-        private void UpdateVisualization()
-        {
-            // 清除之前的可视化
-            Share.TrustDebugPoint.Clear();
-
-            // 添加安全点到可视化
-            if (BattleDataInstance.IsCalculated && BattleDataInstance.SafePoints.Count > 0)
-            {
-                foreach (var safePoint in BattleDataInstance.SafePoints)
-                {
-                    var worldPos = Point.ToVector3(safePoint);
-                    Share.TrustDebugPoint.Add(worldPos);
-                }
-            }
-
-            // 绘制危险区域（深红色边框）
-            DrawDangerAreas();
-        }
-
-        /// <summary>
-        /// 绘制危险区域的深红色边框。
-        /// </summary>
-        private void DrawDangerAreas()
-        {
-            if (BattleDataInstance.TempDangerAreas.Count == 0)
-                return;
-
-            // 获取 ImGui 绘制列表
-            var drawList = ImGui.GetBackgroundDrawList();
-
-            foreach (var dangerArea in BattleDataInstance.TempDangerAreas)
-            {
-                if (dangerArea is CircleDangerArea circle)
-                {
-                    DrawCircleDangerArea(drawList, circle);
-                }
-                else if (dangerArea is RectangleDangerArea rect)
-                {
-                    DrawRectangleDangerArea(drawList, rect);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 绘制圆形危险区域。
-        /// </summary>
-        private void DrawCircleDangerArea(ImDrawListPtr drawList, CircleDangerArea circle)
-        {
-            var centerWorld = Point.ToVector3(circle.Center);
-
-            // 绘制圆形边框（深红色）
-            const int segments = 32;
-            const float thickness = 2.0f;
-
-            for (int i = 0; i < segments; i++)
-            {
-                float angle1 = 2.0f * MathF.PI * i / segments;
-                float angle2 = 2.0f * MathF.PI * (i + 1) / segments;
-
-                var p1World = centerWorld + new Vector3(
-                    MathF.Cos(angle1) * (float)circle.Radius,
-                    0,
-                    MathF.Sin(angle1) * (float)circle.Radius);
-
-                var p2World = centerWorld + new Vector3(
-                    MathF.Cos(angle2) * (float)circle.Radius,
-                    0,
-                    MathF.Sin(angle2) * (float)circle.Radius);
-
-                // 使用 Svc.GameGui.WorldToScreen 转换坐标
-                if (Svc.GameGui.WorldToScreen(p1World, out var p1Screen) &&
-                    Svc.GameGui.WorldToScreen(p2World, out var p2Screen))
-                {
-                    drawList.AddLine(p1Screen, p2Screen, 0xFF0000FF, thickness); // 深红色 (Alpha=FF, Red=00, Green=00, Blue=FF in BGRA)
-                }
-            }
-        }
-
-        /// <summary>
-        /// 绘制矩形危险区域。
-        /// </summary>
-        private void DrawRectangleDangerArea(ImDrawListPtr drawList, RectangleDangerArea rect)
-        {
-            const float thickness = 2.0f;
-            const uint deepRedColor = 0xFF0000FF; // 深红色
-
-            // 定义矩形的四个角（3D世界坐标）
-            var corners = new[]
-            {
-                new Vector3((float)rect.MinX, 0, (float)rect.MinY),
-                new Vector3((float)rect.MaxX, 0, (float)rect.MinY),
-                new Vector3((float)rect.MaxX, 0, (float)rect.MaxY),
-                new Vector3((float)rect.MinX, 0, (float)rect.MaxY)
-            };
-
-            // 转换为屏幕坐标并绘制边框
-            var screenCorners = new Vector2[corners.Length];
-            int validCorners = 0;
-
-            for (int i = 0; i < corners.Length; i++)
-            {
-                if (Svc.GameGui.WorldToScreen(corners[i], out screenCorners[i]))
-                {
-                    validCorners++;
-                }
-            }
-
-            // 只有当所有角都能转换时才绘制完整的边框
-            if (validCorners == 4)
-            {
-                for (int i = 0; i < 4; i++)
-                {
-                    var next = (i + 1) % 4;
-                    drawList.AddLine(screenCorners[i], screenCorners[next], deepRedColor, thickness);
-                }
-            }
         }
 
         #endregion
