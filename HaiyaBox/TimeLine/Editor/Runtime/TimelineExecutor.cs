@@ -32,18 +32,100 @@ public sealed class TimelineExecutor : IDisposable
     /// <summary>节点开始时间记录（用于延迟节点）</summary>
     private readonly Dictionary<string, DateTime> _nodeStartTimes = new();
 
-    /// <summary>最近的游戏事件缓存</summary>
-    private EnemyCastSpellCondParams? _lastSpellCast;
-    private UnitCreateCondParams? _lastUnitCreate;
+    /// <summary>条件节点订阅列表</summary>
+    private readonly List<ConditionSubscription> _subscriptions = new();
+
+    /// <summary>条件节点状态字典</summary>
+    private readonly Dictionary<string, ConditionNodeState> _conditionStates = new();
 
     /// <summary>
     /// 构造函数
     /// </summary>
     public TimelineExecutor()
     {
-        // 订阅事件
-        _eventDispatcher.OnEnemyCastSpell += spell => _lastSpellCast = spell;
-        _eventDispatcher.OnUnitCreate += unit => _lastUnitCreate = unit;
+        // 订阅事件：立即分发给订阅者
+        _eventDispatcher.OnEnemyCastSpell += OnSpellCastEvent;
+        _eventDispatcher.OnUnitCreate += OnUnitCreateEvent;
+        _eventDispatcher.OnTether += OnTetherEvent;
+        _eventDispatcher.OnTargetIcon += OnTargetIconEvent;
+    }
+
+    // ==================== 事件回调处理 ====================
+
+    /// <summary>
+    /// 技能释放事件回调 - 立即处理
+    /// </summary>
+    private void OnSpellCastEvent(EnemyCastSpellCondParams spell)
+    {
+        LogHelper.Print($"[时间轴事件] 技能释放: {spell.SpellId}");
+
+        // 立即通知所有等待该技能的条件节点
+        foreach (var subscription in _subscriptions.ToList())
+        {
+            if (subscription.ConditionType == TriggerConditionType.EnemyCastSpell &&
+                subscription.TargetId == spell.SpellId)
+            {
+                // 立即触发条件节点
+                subscription.OnEventMatched(spell);
+
+                // 移除订阅（避免重复触发）
+                _subscriptions.Remove(subscription);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 单位生成事件回调 - 立即处理
+    /// </summary>
+    private void OnUnitCreateEvent(UnitCreateCondParams unit)
+    {
+        LogHelper.Print($"[时间轴事件] 单位生成: {unit.BattleChara.DataId}");
+
+        foreach (var subscription in _subscriptions.ToList())
+        {
+            if (subscription.ConditionType == TriggerConditionType.UnitCreate &&
+                subscription.TargetId == unit.BattleChara.DataId)
+            {
+                subscription.OnEventMatched(unit);
+                _subscriptions.Remove(subscription);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 连线事件回调
+    /// </summary>
+    private void OnTetherEvent(TetherCondParams tether)
+    {
+        LogHelper.Print($"[时间轴事件] 连线: {tether.Args0}");
+
+        foreach (var subscription in _subscriptions.ToList())
+        {
+            if (subscription.ConditionType == TriggerConditionType.Tether &&
+                subscription.TargetId == tether.Args0)
+            {
+                subscription.OnEventMatched(tether);
+                _subscriptions.Remove(subscription);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 目标标记事件回调
+    /// </summary>
+    private void OnTargetIconEvent(TargetIconEffectTestCondParams icon)
+    {
+        LogHelper.Print($"[时间轴事件] 目标标记: {icon.IconId}");
+
+        foreach (var subscription in _subscriptions.ToList())
+        {
+            if (subscription.ConditionType == TriggerConditionType.TargetIcon &&
+                subscription.TargetId == icon.IconId)
+            {
+                subscription.OnEventMatched(icon);
+                _subscriptions.Remove(subscription);
+            }
+        }
     }
 
     /// <summary>
@@ -61,8 +143,8 @@ public sealed class TimelineExecutor : IDisposable
         ScriptEnv.Reset();
         _activeNodes.Clear();
         _nodeStartTimes.Clear();
-        _lastSpellCast = null;
-        _lastUnitCreate = null;
+        _subscriptions.Clear();
+        _conditionStates.Clear();
 
         // 重置所有节点状态
         ResetNodeStatus(timeline.RootNode);
@@ -88,6 +170,8 @@ public sealed class TimelineExecutor : IDisposable
         _eventDispatcher.Unsubscribe();
         _activeNodes.Clear();
         _nodeStartTimes.Clear();
+        _subscriptions.Clear();
+        _conditionStates.Clear();
         ScriptEnv.Clear();
 
         LogHelper.Print($"[时间轴执行器] 停止时间轴");
@@ -289,67 +373,146 @@ public sealed class TimelineExecutor : IDisposable
     /// <summary>
     /// 执行条件节点 - 检查条件是否满足
     /// </summary>
+    /// <summary>
+    /// 执行条件节点 - 订阅式实现
+    /// </summary>
     private NodeExecutionResult ExecuteCondition(TimelineNode node)
     {
-        if (!node.Parameters.TryGetValue(ConditionNodeParams.ConditionType, out var condTypeObj) ||
-            condTypeObj is not TriggerConditionType condType)
+        // 特殊处理：GameTime条件不需要订阅
+        if (node.Parameters.TryGetValue(ConditionNodeParams.ConditionType, out var condTypeObj) &&
+            condTypeObj is TriggerConditionType condType &&
+            condType == TriggerConditionType.GameTime)
         {
-            return NodeExecutionResult.Failure;
+            return CheckGameTimeCondition(node);
         }
+
+        // 获取或创建节点状态
+        if (!_conditionStates.TryGetValue(node.Id, out var state))
+        {
+            state = new ConditionNodeState();
+            _conditionStates[node.Id] = state;
+        }
+
+        // 如果事件已经匹配，返回成功
+        if (state.EventMatched)
+        {
+            LogHelper.Print($"[条件节点] {node.DisplayName} 完成");
+
+            // 清除状态（避免重复触发）
+            _conditionStates.Remove(node.Id);
+
+            return NodeExecutionResult.Success;
+        }
+
+        // 第一次执行：注册订阅
+        if (!_subscriptions.Any(s => s.NodeId == node.Id))
+        {
+            RegisterConditionSubscription(node, state);
+            LogHelper.Print($"[条件节点] {node.DisplayName} 开始等待事件");
+        }
+
+        // 等待事件触发
+        return NodeExecutionResult.Waiting;
+    }
+
+    /// <summary>
+    /// 注册条件节点的事件订阅
+    /// </summary>
+    private void RegisterConditionSubscription(TimelineNode node, ConditionNodeState state)
+    {
+        if (!node.Parameters.TryGetValue(ConditionNodeParams.ConditionType, out var typeObj) ||
+            typeObj is not TriggerConditionType condType)
+        {
+            return;
+        }
+
+        var subscription = new ConditionSubscription
+        {
+            NodeId = node.Id,
+            ConditionType = condType,
+            OnEventMatched = (eventData) =>
+            {
+                // 事件匹配时的回调（在事件线程中立即执行）
+                state.EventMatched = true;
+                state.MatchedEvent = eventData;
+
+                // 存储事件数据到 ScriptEnv
+                StoreEventData(node, eventData);
+
+                LogHelper.Print($"[条件节点] {node.DisplayName} 事件匹配 ✓");
+            }
+        };
 
         switch (condType)
         {
             case TriggerConditionType.EnemyCastSpell:
-                return CheckSpellCondition(node);
+                if (node.Parameters.TryGetValue(ConditionNodeParams.SpellId, out var spellIdObj) &&
+                    spellIdObj is uint spellId)
+                {
+                    subscription.TargetId = spellId;
+                    _subscriptions.Add(subscription);
+                }
+                break;
 
             case TriggerConditionType.UnitCreate:
-                return CheckUnitCreateCondition(node);
+                if (node.Parameters.TryGetValue(ConditionNodeParams.UnitDataId, out var dataIdObj) &&
+                    dataIdObj is uint dataId)
+                {
+                    subscription.TargetId = dataId;
+                    _subscriptions.Add(subscription);
+                }
+                break;
 
-            case TriggerConditionType.GameTime:
-                return CheckGameTimeCondition(node);
+            case TriggerConditionType.Tether:
+                if (node.Parameters.TryGetValue(ConditionNodeParams.TargetId, out var tetherIdObj) &&
+                    tetherIdObj is uint tetherId)
+                {
+                    subscription.TargetId = tetherId;
+                    _subscriptions.Add(subscription);
+                }
+                break;
 
-            default:
-                return NodeExecutionResult.Waiting;
+            case TriggerConditionType.TargetIcon:
+                if (node.Parameters.TryGetValue(ConditionNodeParams.TargetId, out var iconIdObj) &&
+                    iconIdObj is uint iconId)
+                {
+                    subscription.TargetId = iconId;
+                    _subscriptions.Add(subscription);
+                }
+                break;
         }
     }
 
     /// <summary>
-    /// 检查技能条件
+    /// 存储事件数据到 ScriptEnv
     /// </summary>
-    private NodeExecutionResult CheckSpellCondition(TimelineNode node)
+    private void StoreEventData(TimelineNode node, ITriggerCondParams eventData)
     {
-        if (_lastSpellCast == null)
-            return NodeExecutionResult.Waiting;
-
-        uint targetSpellId = node.Parameters.GetValueOrDefault(ConditionNodeParams.SpellId, 0u) is uint sid ? sid : 0u;
-
-        if (_lastSpellCast.SpellId == targetSpellId)
+        switch (eventData)
         {
-            // 清除缓存，避免重复触发
-            _lastSpellCast = null;
-            return NodeExecutionResult.Success;
+            case EnemyCastSpellCondParams spell:
+                ScriptEnv.SetValue($"{node.Id}_SpellId", spell.SpellId);
+                ScriptEnv.SetValue($"{node.Id}_SpellPos", spell.CastPos);
+                ScriptEnv.SetValue($"{node.Id}_SpellRot", spell.CastRot);
+                break;
+
+            case UnitCreateCondParams unit:
+                ScriptEnv.SetValue($"{node.Id}_UnitDataId", unit.BattleChara.DataId);
+                ScriptEnv.SetValue($"{node.Id}_UnitPos", unit.BattleChara.Position);
+                ScriptEnv.SetValue($"{node.Id}_Unit", unit.BattleChara);
+                break;
+
+            case TetherCondParams tether:
+                ScriptEnv.SetValue($"{node.Id}_TetherId", tether.Args0);
+                ScriptEnv.SetValue($"{node.Id}_Source", tether.Left);
+                ScriptEnv.SetValue($"{node.Id}_Target", tether.Right);
+                break;
+
+            case TargetIconEffectTestCondParams icon:
+                ScriptEnv.SetValue($"{node.Id}_IconId", icon.IconId);
+                ScriptEnv.SetValue($"{node.Id}_Target", icon.Target);
+                break;
         }
-
-        return NodeExecutionResult.Waiting;
-    }
-
-    /// <summary>
-    /// 检查单位生成条件
-    /// </summary>
-    private NodeExecutionResult CheckUnitCreateCondition(TimelineNode node)
-    {
-        if (_lastUnitCreate == null)
-            return NodeExecutionResult.Waiting;
-
-        uint targetDataId = node.Parameters.GetValueOrDefault(ConditionNodeParams.UnitDataId, 0u) is uint did ? did : 0u;
-
-        if (_lastUnitCreate.BattleChara.DataId == targetDataId)
-        {
-            _lastUnitCreate = null;
-            return NodeExecutionResult.Success;
-        }
-
-        return NodeExecutionResult.Waiting;
     }
 
     /// <summary>
@@ -461,6 +624,10 @@ public sealed class TimelineExecutor : IDisposable
     private void ResetNodeStatus(TimelineNode node)
     {
         node.Status = NodeStatus.Pending;
+
+        // ✓ 新增：清理条件节点的状态和订阅
+        _conditionStates.Remove(node.Id);
+        _subscriptions.RemoveAll(s => s.NodeId == node.Id);
 
         // 重置循环计数器
         if (node.Type == NodeType.Loop)

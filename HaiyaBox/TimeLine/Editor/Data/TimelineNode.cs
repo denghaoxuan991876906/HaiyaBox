@@ -228,6 +228,9 @@ public static class ConditionNodeParams
 
     /// <summary>超时时间（秒，0表示永不超时）</summary>
     public const string TimeoutSeconds = "TimeoutSeconds";
+
+    /// <summary>目标ID（用于Tether/TargetIcon等条件）</summary>
+    public const string TargetId = "TargetId";
 }
 
 /// <summary>

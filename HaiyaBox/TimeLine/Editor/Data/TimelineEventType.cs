@@ -1,3 +1,6 @@
+using System;
+using AEAssist.CombatRoutine.Trigger;
+
 namespace HaiyaBox.TimeLine.Editor.Data;
 
 /// <summary>
@@ -73,4 +76,34 @@ public enum NodeExecutionResult
 
     /// <summary>跳过（节点被禁用）</summary>
     Skipped
+}
+
+/// <summary>
+/// 条件节点订阅信息
+/// </summary>
+public class ConditionSubscription
+{
+    /// <summary>节点ID</summary>
+    public string NodeId { get; set; } = string.Empty;
+
+    /// <summary>条件类型（技能释放/单位生成等）</summary>
+    public TriggerConditionType ConditionType { get; set; }
+
+    /// <summary>目标ID（技能ID或单位DataID等）</summary>
+    public uint TargetId { get; set; }
+
+    /// <summary>事件匹配时的回调</summary>
+    public Action<ITriggerCondParams> OnEventMatched { get; set; } = null!;
+}
+
+/// <summary>
+/// 条件节点运行时状态
+/// </summary>
+public class ConditionNodeState
+{
+    /// <summary>事件是否已匹配</summary>
+    public bool EventMatched { get; set; }
+
+    /// <summary>匹配的事件数据（可选，用于调试）</summary>
+    public ITriggerCondParams? MatchedEvent { get; set; }
 }

@@ -30,6 +30,9 @@ public class TimelineEditorTab : IDisposable
     /// <summary>时间轴文件列表</summary>
     private List<TimelineFileInfo> _timelineList = new();
 
+    /// <summary>Expanded node ids to keep tree state.</summary>
+    private readonly HashSet<string> _expandedNodeIds = new();
+
     /// <summary>时间轴文件列表是否需要刷新</summary>
     private bool _needRefreshList = true;
 
@@ -155,6 +158,7 @@ public class TimelineEditorTab : IDisposable
                 {
                     _currentTimeline = _timelineManager.CreateNewTimeline(_newTimelineName);
                     _selectedNode = _currentTimeline.RootNode;
+                    ResetExpansionState(_currentTimeline);
                     ImGui.CloseCurrentPopup();
 
                     LogHelper.Print($"[时间轴编辑器] 创建新时间轴: {_newTimelineName}");
@@ -253,6 +257,7 @@ public class TimelineEditorTab : IDisposable
                     {
                         _currentTimeline = null;
                         _selectedNode = null;
+                        _expandedNodeIds.Clear();
                     }
                 }
 
@@ -355,6 +360,11 @@ public class TimelineEditorTab : IDisposable
         if (node.Children.Count == 0)
             flags |= ImGuiTreeNodeFlags.Leaf;
 
+        if (_expandedNodeIds.Contains(node.Id))
+        {
+            ImGui.SetNextItemOpen(true);
+        }
+
         // 节点颜色（根据状态）
         var color = node.Status switch
         {
@@ -372,6 +382,15 @@ public class TimelineEditorTab : IDisposable
         if (ImGui.IsItemClicked())
         {
             _selectedNode = node;
+        }
+
+        if (isOpen)
+        {
+            _expandedNodeIds.Add(node.Id);
+        }
+        else
+        {
+            _expandedNodeIds.Remove(node.Id);
         }
 
         // TODO: 拖拽功能待实现（需要适配 ImGui API 版本）
@@ -537,6 +556,7 @@ public class TimelineEditorTab : IDisposable
 
         parent.AddChild(newNode);
         _selectedNode = newNode;
+        ExpandNodePath(parent);
 
         ImGui.CloseCurrentPopup();
     }
@@ -551,6 +571,7 @@ public class TimelineEditorTab : IDisposable
         {
             _currentTimeline = timeline;
             _selectedNode = timeline.RootNode;
+            ResetExpansionState(timeline);
         }
     }
 
@@ -573,5 +594,26 @@ public class TimelineEditorTab : IDisposable
     {
         _executor.Dispose();
         LogHelper.Print("[时间轴编辑器] 已释放资源");
+    }
+
+    /// <summary>Clear cached expansion state and keep root expanded.</summary>
+    private void ResetExpansionState(Timeline timeline)
+    {
+        _expandedNodeIds.Clear();
+        _expandedNodeIds.Add(timeline.RootNode.Id);
+    }
+
+    /// <summary>Ensure timeline path that contains this node stays expanded.</summary>
+    private void ExpandNodePath(TimelineNode node)
+    {
+        if (_currentTimeline == null)
+            return;
+
+        var current = node;
+        while (current != null)
+        {
+            _expandedNodeIds.Add(current.Id);
+            current = _currentTimeline.GetParentNode(current);
+        }
     }
 }
