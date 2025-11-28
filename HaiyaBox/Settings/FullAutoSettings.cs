@@ -61,6 +61,9 @@ namespace HaiyaBox.Settings
 
         // RecordSettings：事件记录相关设置，控制记录各类触发事件的调试信息
         public RecordSettings RecordSettings { get; set; } = new();
+        
+        //DutyBattleSettings: 特定副本战斗设置，特定副本的一些本地功能
+        public DutyBattleSettings DutyBattleSettings { get; set; } = new();
 
         /// <summary>
         /// 保存当前配置到配置文件
@@ -240,6 +243,11 @@ namespace HaiyaBox.Settings
     /// </summary>
     public class AutomationSettings
     {
+        public bool XszRemoteEnabled { get; set; }
+        public bool DRCmdEnabled { get; set; } = true;
+        public bool XszCmdEnabled { get; set; } = false;
+        public bool RollModeEnable { get;  set; } = true;
+        public string NeedRole { get; set; } = "";
         // 当前自动功能所在地图的 ID（默认值为 1238）
         public uint AutoFuncZoneId { get; set; } = 1238;
 
@@ -305,6 +313,22 @@ namespace HaiyaBox.Settings
         public int EverkeepCompletedCount { get; set; }
         public int RenlongCompletedCount { get; set; }
 
+        public void UpdateRemoteMode(bool enabled)
+        {
+            XszRemoteEnabled = enabled;
+            FullAutoSettings.Instance.Save();
+        }
+        public void UpdateDrCmdEnabled(bool enabled)
+        {
+            DRCmdEnabled = enabled;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateXszCmdEnabled(bool enabled)
+        {
+            XszCmdEnabled = enabled;
+            FullAutoSettings.Instance.Save();
+        }
         /// <summary>
         /// 更新当前地图 ID，并保存配置
         /// </summary>
@@ -639,6 +663,9 @@ namespace HaiyaBox.Settings
                 case DutyType.Everkeep:
                     EverkeepCompletedCount = count;
                     break;
+                case DutyType.Renlong:
+                    RenlongCompletedCount = count;
+                    break;
                 default:
                     LogHelper.PrintError("未知的副本类型");
                     return;
@@ -678,6 +705,35 @@ namespace HaiyaBox.Settings
         }
     }
 
+    public class DutyBattleSettings
+    {
+        // 全局开关
+        public bool DutyBattleEnabled { get; set; } = true;
+        // 刃龙麻将近战跟随开关
+        public bool RenlongFollowEnabled { get; set; } = true;
+        // 刃龙非机制时间跟随开关
+        public bool NoneEventFollowEnabled { get; set; } = true;
+        
+        // =================== 事件记录功能配置方法 ===================
+
+        public void UpdateDutyBattleEnabled(bool enabled)
+        {
+            DutyBattleEnabled = enabled;
+            FullAutoSettings.Instance.Save();
+        }
+        
+        public void UpdateRenlongFollowEnabled(bool enabled)
+        {
+            RenlongFollowEnabled = enabled;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateNoneEventFollowEnabled(bool enabled)
+        {
+            NoneEventFollowEnabled = enabled;
+            FullAutoSettings.Instance.Save();
+        }
+    }
     /// <summary>
     /// DebugPrintSettings 存储调试打印相关配置，
     /// 包括总开关和针对各个事件类型的打印开关，

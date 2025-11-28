@@ -45,6 +45,9 @@
       <HintPath>$(AELibPath)ECommons.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="XSZToolbox">
+      <HintPath>C:\Users\melat\AppData\Roaming\XIVLauncherCN\installedPlugins\XSZToolbox\1.4.1.8\XSZToolbox.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

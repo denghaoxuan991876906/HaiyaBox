@@ -5,7 +5,6 @@ using AEAssist.Helper;
 using AEAssist.Verify;
 using Dalamud.Bindings.ImGui;
 using HaiyaBox.Hooks;
-using HaiyaBox.TimeLine.Editor.UI;
 using HaiyaBox.Triggers.TriggerAction;
 using HaiyaBox.Triggers.TriggerCondition;
 using HaiyaBox.UI;
@@ -16,7 +15,6 @@ namespace HaiyaBox.Plugin
     {
         private readonly GeometryTab _geometryTab = new();
         private readonly AutomationTab _automationTab = new();
-        private readonly TimelineEditorTab _timelineEditorTab = new();
         private readonly FaGeneralSettingTab _faGeneralSettingTab = new();
         private readonly EventRecordTab _eventRecordTab = new();
         private readonly BlackListTab _blackListTab = new();
@@ -47,14 +45,12 @@ namespace HaiyaBox.Plugin
         {
             _automationTab.OnLoad(loadContext);
             _eventRecordTab.OnLoad(loadContext);
-            _timelineEditorTab.OnLoad(loadContext);
         }
 
         public void Dispose()
         {
             _automationTab.Dispose();
             _eventRecordTab.Dispose();
-            _timelineEditorTab.Dispose();
             _dangerAreaTab.Dispose();
             actorControlHook?.Dispose();
             _treasureOpener.Dispose();
@@ -64,7 +60,6 @@ namespace HaiyaBox.Plugin
         {
             _geometryTab.Update();
             _automationTab.Update();
-            _timelineEditorTab.Update();
             _blackListTab.Update();
             _dangerAreaTab.Update();
             _treasureOpener.Update();
@@ -85,11 +80,7 @@ namespace HaiyaBox.Plugin
                     _automationTab.Draw();
                     ImGui.EndTabItem();
                 }
-                if (ImGui.BeginTabItem("时间轴编辑器"))
-                {
-                    _timelineEditorTab.Draw();
-                    ImGui.EndTabItem();
-                }
+
 
                 if (ImGui.BeginTabItem("FA全局设置"))
                 {
