@@ -50,8 +50,16 @@ namespace HaiyaBox.Plugin
             _eventRecordTab.OnLoad(loadContext);
             _xszToolboxIpc = new XSZToolboxIpc();
             XszRemote.Instance = _xszToolboxIpc;
+            ResetAutoSettings();
         }
 
+        private void ResetAutoSettings()
+        {
+            FullAutoSettings.Instance.AutomationSettings.AutoCountdownEnabled = false;
+            FullAutoSettings.Instance.AutomationSettings.AutoLeaveEnabled = false;
+            FullAutoSettings.Instance.AutomationSettings.AutoQueueEnabled = false;
+            FullAutoSettings.Instance.Save();
+        }
         public void Dispose()
         {
             _automationTab.Dispose();
