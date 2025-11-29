@@ -263,6 +263,10 @@ namespace HaiyaBox.UI
             _isCountdownCompleted = false;
         }
 
+        private bool killGame = false;
+        private bool shutdown = false;
+        private string commond = "";
+        
         /// <summary>
         /// 绘制 AutomationTab 的所有 UI 控件，
         /// 包括地图记录、自动倒计时、自动退本、遥控按钮以及自动排本的设置和调试信息。
@@ -546,49 +550,7 @@ namespace HaiyaBox.UI
                     LogHelper.Print($"为 {_selectedRoles} 发送了文本指令:{_customCmd}");
                 }
             }
-            
-            // ────────────────────── 顶蟹 ──────────────────────
-            if (ImGui.Button("顶蟹"))
-            {
-                const ulong targetCid = 19014409511470591UL; // 小猪蟹 Cid
-                string? targetRole = null;
-                
-                var infoModule = InfoModule.Instance();
-                var commonList = (InfoProxyCommonList*)infoModule->GetInfoProxyById(InfoProxyId.PartyMember);
-                if (commonList != null)
-                {
-                    foreach (var data in commonList->CharDataSpan)
-                    {
-                        if (data.ContentId == targetCid)
-                        {
-                            var targetName = data.NameString;
-                            targetRole = RemoteControl.GetRoleByPlayerName(targetName);
-                            break;
-                        }
-                    }
-                }
 
-                if (!string.IsNullOrEmpty(targetRole))
-                {
-                    RemoteControl.Cmd(targetRole, "/gaction 跳跃");
-                    Core.Resolve<MemApiChatMessage>().Toast2("顶蟹成功!", 1, 2000);
-                }
-                else
-                {
-                    string msg = "队伍中未找到小猪蟹";
-                    LogHelper.Print(msg);
-                }
-            
-                var random = new Random().Next(10);
-                var message = "允许你顶蟹";
-                if (random > 5)
-                {
-                    message = "不许顶我！";
-                }
-                
-                Utilities.FakeMessage("歌无谢", "拉诺西亚", message, XivChatType.TellIncoming);
-            }
-            
             //【自动排本设置】
             ImGui.Separator();
             ImGui.Text("自动排本设置:");
@@ -652,52 +614,9 @@ namespace HaiyaBox.UI
                 if (runtimeEnabled)
                 {
                     ImGui.Separator();
-                    ImGui.Text("完成指定次数后要操作的职能：");
-
-                    if (ImGui.BeginTable("##KillShutdownTable", 3,
-                                         ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
-                    {
-                        // 列设置 + 彩色表头
-                        ImGui.TableSetupColumn("职能",   ImGuiTableColumnFlags.None, 70f);
-                        ImGui.TableSetupColumn("关游戏", ImGuiTableColumnFlags.None, 60f);
-                        ImGui.TableSetupColumn("关机",   ImGuiTableColumnFlags.None, 60f);
-
-                        ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
-                        ImGui.TableSetColumnIndex(0);  ImGui.Text("职能");
-                        ImGui.TableSetColumnIndex(1);
-                        ImGui.TextColored(1, "关游戏");
-                        ImGui.TableSetColumnIndex(2);
-                        ImGui.TextColored(2, "关机");
-
-                        var roles = new[]
-                        {
-                            PartyRole.MT, PartyRole.ST, PartyRole.H1, PartyRole.H2,
-                            PartyRole.D1, PartyRole.D2, PartyRole.D3, PartyRole.D4
-                        };
-
-                        foreach (var role in roles)
-                        {
-                            ImGui.TableNextRow();
-                            ImGui.TableSetColumnIndex(0); ImGui.Text(role.ToString());
-
-                            // 关游戏
-                            ImGui.TableSetColumnIndex(1);
-                            bool kill = Settings.KillRoleFlags[role];
-                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0.70f, 0f, 1f)); // 橙色
-                            if (ImGui.Checkbox($"##Kill{role}", ref kill))
-                                Settings.UpdateKillRoleFlag(role, kill);
-                            ImGui.PopStyleColor();
-
-                            // 关机
-                            ImGui.TableSetColumnIndex(2);
-                            bool shut = Settings.ShutdownRoleFlags[role];
-                            ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0.25f, 0.25f, 1f)); // 红色
-                            if (ImGui.Checkbox($"##Shut{role}", ref shut))
-                                Settings.UpdateShutdownRoleFlag(role, shut);
-                            ImGui.PopStyleColor();
-                        }
-                        ImGui.EndTable();
-                    }
+                    ImGui.Text("完成指定次数后的操作：");
+                    ImGui.SameLine();
+                    ImGui.Checkbox("关游戏##次数", ref killGame);
                 }
             }
 
@@ -835,41 +754,6 @@ namespace HaiyaBox.UI
                         ImGui.Text($"[{i}] {status.Name} 状态: {onlineText}, {dutyText}");
                     }
                 }
-                // 如果在新月岛内
-                var instancePtr = PublicContentOccultCrescent.GetInstance();
-                var statePtr = PublicContentOccultCrescent.GetState();
-                if (instancePtr != null && statePtr != null)
-                {
-                    ImGui.Text("新月岛内状态");
-                    float remainingTime = instancePtr->ContentTimeLeft;
-                    ImGui.Text($"剩余时间: {(int)(remainingTime / 60)}分{(int)(remainingTime % 60)}秒");
-                    
-                    ImGui.Text("职业等级:");
-                    var supportLevels = statePtr->SupportJobLevels;
-                    for (byte i = 0; i < supportLevels.Length; i++)
-                    {
-                        var job = AutomationSettings.SupportJobData[i].Name;
-                        byte level = supportLevels[i];
-                        ImGui.Text($"{job}: Level {level}");
-                        // 如果已满级就标注Max
-                        if (level >= AutomationSettings.SupportJobData[i].MaxLevel)
-                        {
-                            ImGui.SameLine();
-                            ImGui.TextColored(new Vector4(1.0f, 1.0f, 0.0f, 1.0f), "Max"); // 黄色
-                        }
-                        if (level <= 0) 
-                            continue;
-                        ImGui.SameLine();
-                        if (ImGui.Button($"切换##{i}") && statePtr->CurrentSupportJob != i)
-                        {
-                            PublicContentOccultCrescent.ChangeSupportJob(i);
-                        }
-                    }
-                    var proxy = (InfoProxy24*)InfoModule.Instance()->GetInfoProxyById((InfoProxyId)24);
-                    ImGui.Text($"现在岛内人数: {proxy->EntryCount}");
-                    ImGui.Text($"当前岛内黑名单玩家数量: {BlackListTab.LastHitCount}");
-                    ImGui.Text($"当前是否处于CE范围内: {IsInsideCriticalEncounter(Core.Me.Position)}");
-                }
             }
         }
 
@@ -970,6 +854,8 @@ namespace HaiyaBox.UI
                             LogHelper.Print(chestOpened
                                 ? "[Roll点调试] 宝箱已自动开启，等待10秒再退本。"
                                 : "[Roll点调试] 未能自动开启宝箱，按超时流程等待10秒。");
+                            RemoteControl.Cmd("MT", "/xsz-roll need");
+                            RemoteControl.Cmd("ST|H1|H2|D1|D2|D3|D4", "/xsz-roll pass");
                             await Task.Delay(TreasurePostOpenDelayMs);
                         }
                         else if (Settings.AutoLeaveAfterLootEnabled)
@@ -1070,17 +956,9 @@ namespace HaiyaBox.UI
                     _runtimes = 0;
 
                     // 关游戏
-                    string killRegex = Settings.BuildRegex(forKill: true);
-                    if (!string.IsNullOrEmpty(killRegex))
+                    if (killGame)
                     {
-                        RemoteControl.Cmd(killRegex, "/xlkill");
-                    }
-
-                    // 关机
-                    string shutRegex = Settings.BuildRegex(forKill: false);
-                    if (!string.IsNullOrEmpty(shutRegex))
-                    {
-                        RemoteControlHelper.Shutdown(shutRegex);
+                        RemoteControl.Cmd("","/xlkill");
                     }
                 }
 
