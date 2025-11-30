@@ -52,7 +52,7 @@ namespace HaiyaBox.UI
         };
         private readonly Dictionary<string, bool> _rollSelection = new()
         {
-            { "MT", false },
+            { "MT", true },
             { "ST", false },
             { "H1", false },
             { "H2", false },
@@ -243,7 +243,21 @@ namespace HaiyaBox.UI
             LogHelper.Print($"副本任务完成（DutyCompleted 事件，ID: {e}）");
             _dutyCompleted = true; // 标记副本已完成
             _runtimes++;
-
+            if (Settings.DRCmdEnabled)
+            {
+                RemoteControl.Cmd("", "/xlenableplugin LazyLoot");
+                RemoteControl.Cmd("", "/fulf on");
+                RemoteControl.Cmd(_rollRoles, "/fulf need");
+                if (_passRoles != "")
+                    RemoteControl.Cmd(_passRoles, "/fulf greed");
+            }
+            else 
+            {
+                RemoteControl.Cmd("", "/xsz-fulf on");
+                RemoteControl.Cmd(_rollRoles, "/xsz-fulf need");
+                if (_passRoles != "")
+                    RemoteControl.Cmd(_passRoles, "/xsz-fulf greed");
+            }
             // 查找字典中是否存在与当前副本 ID 对应的更新操作
             if (_dutyUpdateActions.TryGetValue((DutyType)e, out var updateAction))
             {
@@ -348,14 +362,8 @@ namespace HaiyaBox.UI
             {
                 Settings.UpdateAutoLeaveAfterLootEnabled(waitRCompleted);
             }
-            ImGui.SameLine();
-            bool rollModeEnable = Settings.RollModeEnable;
-            if (ImGui.Checkbox("R点模式设置", ref rollModeEnable))
-            {
-                Settings.UpdateAutoLeaveAfterLootEnabled(rollModeEnable);
-            }
 
-            if (rollModeEnable)
+            if (waitRCompleted)
             {
                 ImGui.Text("设置R点需求规则：");
                 ImGui.SameLine();
@@ -384,20 +392,20 @@ namespace HaiyaBox.UI
                     _passRoles = string.Join("|", pass); // 修正后的pass处理
                     LogHelper.Print("需求roll点玩家：" + _rollRoles);
                     LogHelper.Print("放弃roll点玩家："+_passRoles);
-                    if (drCmdEnabled)
+                    if (Settings.DRCmdEnabled)
                     {
                         RemoteControl.Cmd("", "/xlenableplugin LazyLoot");
                         RemoteControl.Cmd("", "/fulf on");
                         RemoteControl.Cmd(_rollRoles, "/fulf need");
                         if (_passRoles != "")
-                            RemoteControl.Cmd(_passRoles, "/fulf pass");
+                            RemoteControl.Cmd(_passRoles, "/fulf greed");
                     }
                     else 
                     {
                         RemoteControl.Cmd("", "/xsz-fulf on");
                         RemoteControl.Cmd(_rollRoles, "/xsz-fulf need");
                         if (_passRoles != "")
-                            RemoteControl.Cmd(_passRoles, "/xsz-fulf pass");
+                            RemoteControl.Cmd(_passRoles, "/xsz-fulf greed");
                     }
                 }
             }
@@ -846,16 +854,27 @@ namespace HaiyaBox.UI
 
                     if (hasChest)
                     {
-                        LogHelper.Print("[Roll点调试] 检测到极神副本，等待2秒让宝箱出现...");
-                        await Task.Delay(5 * 1000);
+                        LogHelper.Print("[Roll点调试] 检测到极神副本，等待8秒让宝箱出现...");
+                        await Task.Delay(8 * 1000);
                         if (Settings.AutoLeaveAfterLootEnabled && HasTreasureAvailable())
                         {
                             bool chestOpened = await TryOpenTreasureBeforeLeaveAsync();
                             LogHelper.Print(chestOpened
                                 ? "[Roll点调试] 宝箱已自动开启，等待10秒再退本。"
                                 : "[Roll点调试] 未能自动开启宝箱，按超时流程等待10秒。");
-                            RemoteControl.Cmd("MT", "/xsz-roll need");
-                            RemoteControl.Cmd("ST|H1|H2|D1|D2|D3|D4", "/xsz-roll pass");
+                            if (Settings.DRCmdEnabled)
+                            {
+                                RemoteControl.Cmd("", "/xlenableplugin LazyLoot");
+                                RemoteControl.Cmd(_rollRoles, "/lazy need");
+                                if (_passRoles != "")
+                                    RemoteControl.Cmd(_passRoles, "/lazy greed");
+                            }
+                            else 
+                            {
+                                RemoteControl.Cmd(_rollRoles, "/xsz-roll need");
+                                if (_passRoles != "")
+                                    RemoteControl.Cmd(_passRoles, "/xsz-roll greed");
+                            }
                             await Task.Delay(TreasurePostOpenDelayMs);
                         }
                         else if (Settings.AutoLeaveAfterLootEnabled)
@@ -891,7 +910,7 @@ namespace HaiyaBox.UI
                 {
                     if (TreasureOpenerService.Instance.TryOpenTreasureOnce())
                         return true;
-                    await Task.Delay(500);
+                    await Task.Delay(3000);
                 }
             }
             catch (Exception ex)

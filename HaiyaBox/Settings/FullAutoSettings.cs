@@ -259,7 +259,7 @@ namespace HaiyaBox.Settings
         // 自动退本状态及延迟（单位：秒）
         public bool AutoLeaveEnabled { get; set; }
         public bool RunTimeEnabled { get; set; }
-        public int AutoLeaveDelay { get; set; } = 1;
+        public int AutoLeaveDelay { get; set; } = 10;
 
         public int RunTimeLimit { get; set; } = 5;
 
