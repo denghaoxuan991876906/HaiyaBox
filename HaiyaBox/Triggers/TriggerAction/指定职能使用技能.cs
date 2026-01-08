@@ -112,7 +112,7 @@ internal class 指定职能使用技能: ITriggerAction
                     ChatHelper.SendMessage($"/p 使用技能（指定目标）:{role.Key} 技能id：{skillId} 技能名:{skillId.GetSpell().Name} 目标id:{targetId}");
                 }
                 else
-                
+
                 {
                     ChatHelper.SendMessage($"/p 使用技能:{role.Key} 技能id：{skillId} 技能名:{skillId.GetSpell().Name}");
                     XszRemote.UseSkill(role.Key, skillId);
