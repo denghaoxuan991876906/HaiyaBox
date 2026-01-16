@@ -55,6 +55,8 @@ namespace HaiyaBox.Plugin
             _eventRecordTab.OnLoad(loadContext);
             _xszToolboxIpc = new XSZToolboxIpc();
             XszRemote.Instance = _xszToolboxIpc;
+            DebugPoint.Initialize();
+
 
             
             ResetAutoSettings();

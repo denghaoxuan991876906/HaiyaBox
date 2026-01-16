@@ -1,50 +1,140 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Collections.Generic;
+using System.Numerics;
+using AEAssist;
 using AEAssist.Helper;
 using Dalamud.Bindings.ImGui;
 using ECommons.DalamudServices;
+using HaiyaBox.Settings;
 
 namespace HaiyaBox.Utils;
 
 public static class DebugPoint
 {
-    private static readonly List<Vector3> Points = new();
-    public static void Add(Vector3 pos) => Points.Add(pos);
-    public static void Clear() => Points.Clear();
+    private const float Radius = 4f;
+    private const float LineThickness = 2f;
+    private const float LabelOffset = 4f;
+    private static bool _subscribed;
 
-    public static void Render()
+    public static void Initialize()
     {
-        if (Points.Count == 0)
+        if (_subscribed)
+        {
             return;
+        }
+
+        Svc.PluginInterface.UiBuilder.Draw += Render;
+        _subscribed = true;
+    }
+
+    public static void Dispose()
+    {
+        if (!_subscribed)
+        {
+            return;
+        }
+
+        Svc.PluginInterface.UiBuilder.Draw -= Render;
+        _subscribed = false;
+    }
+
+    public static void Add(Vector3 pos) => Share.TrustDebugPoint.Add(pos);
+
+    public static void Clear() => Share.TrustDebugPoint.Clear();
+
+    private static void Render()
+    {
+        if (!FullAutoSettings.Instance.FaGeneralSetting.PrintDebugInfo)
+        {
+            return;
+        }
+
         try
         {
-            var drawList = ImGui.GetForegroundDrawList();
-            uint red = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 0, 0, 1));
-            uint yellow = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 1, 0, 1));
-            const float radius = 4f;
-            const float lineThickness = 2f;
+            var points = Share.TrustDebugPoint;
+            var labeledPoints = Share.DebugPointWithText;
 
-            // 先画线
-            for (int i = 0; i < Points.Count - 1; i++)
+            var hasPoints = points != null && points.Count > 0;
+            var hasLabels = labeledPoints != null && labeledPoints.Count > 0;
+
+            if (!hasPoints && !hasLabels)
             {
-                Svc.GameGui.WorldToScreen(Points[i], out var p1);
-                Svc.GameGui.WorldToScreen(Points[i + 1], out var p2);
-                drawList.AddLine(p1, p2, red, lineThickness);
+                return;
             }
 
-            // 再画点和序号
-            for (int i = 0; i < Points.Count; i++)
+            var drawList = ImGui.GetForegroundDrawList();
+            uint red = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0f, 0f, 1f));
+            uint yellow = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 0f, 1f));
+            uint green = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2f, 1f, 0.2f, 1f));
+
+            List<Vector3>? snapshot = null;
+            if (hasPoints)
             {
-                if (Svc.GameGui.WorldToScreen(Points[i], out var screenPos))
+                snapshot = new List<Vector3>(points);
+            }
+
+            if (snapshot != null && snapshot.Count > 1)
+            {
+                for (int i = 0; i < snapshot.Count - 1; i++)
                 {
-                    drawList.AddCircleFilled(screenPos, radius, red);
-                    Vector2 textPos = new(screenPos.X + radius + 4, screenPos.Y - radius / 2);
+                    if (TryProject(snapshot[i], out var p1) && TryProject(snapshot[i + 1], out var p2))
+                    {
+                        drawList.AddLine(p1, p2, red, LineThickness);
+                    }
+                }
+            }
+
+            if (snapshot != null)
+            {
+                for (int i = 0; i < snapshot.Count; i++)
+                {
+                    if (!TryProject(snapshot[i], out var screenPos))
+                    {
+                        continue;
+                    }
+
+                    drawList.AddCircleFilled(screenPos, Radius, red);
+                    var textPos = new Vector2(screenPos.X + Radius + LabelOffset, screenPos.Y - Radius / 2f);
                     drawList.AddText(textPos, yellow, $"[{i + 1}]");
                 }
             }
+
+            if (hasLabels)
+            {
+                var labelSnapshot = new List<(string Label, Vector3 Position)>();
+                foreach (var entry in labeledPoints)
+                {
+                    string label = entry.Key is null ? string.Empty : entry.Key.ToString();
+                    if (string.IsNullOrWhiteSpace(label))
+                    {
+                        continue;
+                    }
+
+                    labelSnapshot.Add((label, entry.Value));
+                }
+
+                foreach (var item in labelSnapshot)
+                {
+                    if (!TryProject(item.Position, out var screenPos))
+                    {
+                        continue;
+                    }
+
+                    drawList.AddCircleFilled(screenPos, Radius, green);
+                    var textPos = new Vector2(screenPos.X + Radius + LabelOffset, screenPos.Y - Radius / 2f);
+                    drawList.AddText(textPos, yellow, item.Label);
+                }
+            }
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
-            LogHelper.PrintError(ex.Message);
+            LogHelper.PrintError($"DebugPoint.Render failed: {ex.Message}");
         }
+    }
+
+    private static bool TryProject(Vector3 world, out Vector2 screen)
+    {
+        screen = Vector2.Zero;
+        return Svc.GameGui != null && Svc.GameGui.WorldToScreen(world, out screen);
     }
 }
