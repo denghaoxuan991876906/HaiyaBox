@@ -1,0 +1,71 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore HaiyaBox.sln
+
+      - name: Build Release
+        run: |
+          dotnet build HaiyaBox.sln -c Release -p:OutputPath=${{ github.workspace }}\output
+
+      - name: Prepare Plugin Package
+        run: |
+          mkdir package
+          copy output\*.dll package\
+          copy output\*.pdb package\
+
+      - name: Get Version
+        id: get_version
+        run: |
+          if ("${{ github.ref }}" -like "refs/tags/*") {
+            $version = "${{ github.ref }}" -replace "refs/tags/", ""
+            echo "version=$version" >> $env:GITHUB_OUTPUT
+          } else {
+            $version = "dev-" + (Get-Date -Format "yyyyMMdd-HHmm")
+            echo "version=$version" >> $env:GITHUB_OUTPUT
+          }
+          echo "Version: $version"
+
+      - name: Create Archive
+        run: |
+          Compress-Archive -Path package\* -DestinationPath "HaiyaBox-${{ steps.get_version.outputs.version }}.zip"
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: HaiyaBox-${{ steps.get_version.outputs.version }}
+          path: HaiyaBox-${{ steps.get_version.outputs.version }}.zip
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: HaiyaBox-${{ steps.get_version.outputs.version }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
