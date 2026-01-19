@@ -65,11 +65,24 @@ jobs:
           name: HaiyaBox-${{ steps.get_version.outputs.version }}
           path: HaiyaBox-${{ steps.get_version.outputs.version }}.zip
 
-      - name: Create Release
+      - name: Create Release (Tag)
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: HaiyaBox-${{ steps.get_version.outputs.version }}.zip
           generate_release_notes: true
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Dev Release (Master)
+        if: github.ref == 'refs/heads/master'
+        run: |
+          $tag = "dev-" + (Get-Date -Format "yyyyMMdd-HHmm")
+          gh release create $tag `
+            --title "Dev Build - ${{ steps.get_version.outputs.version }}" `
+            --notes "自动开发构建`n**提交**: ${{ github.event.head_commit.message }}" `
+            --prerelease `
+            HaiyaBox-${{ steps.get_version.outputs.version }}.zip
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
