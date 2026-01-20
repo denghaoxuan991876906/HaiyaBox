@@ -4,6 +4,12 @@ namespace HaiyaBox.Utils;
 
 public static class GeometryUtilsXZ
 {
+    public static int PositionTo8Dir(Vector3 point, Vector3 centre)
+    {
+        // Dirs: N = 0, NE = 1, ..., NW = 7
+        var r = Math.Round(4 - 4 * Math.Atan2(point.X - centre.X, point.Z - centre.Z) / Math.PI) % 8;
+        return (int)r;
+    }
     public static Vector3 ExtendPoint(Vector3 centerPoint, Vector3 referencePoint, float distanceToExtend)
     {
         // 将Vector3转换为Vector2进行平面计算
