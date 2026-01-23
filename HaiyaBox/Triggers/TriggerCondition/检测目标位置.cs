@@ -5,7 +5,7 @@ using ECommons.DalamudServices;
 
 namespace HaiyaBox.Triggers.TriggerCondition;
 
-public class 检测目标位置 : ITriggerCond
+public class 检测目标位置A : ITriggerCond
 {
     [LabelName("目标DataID")]
     public int targetDataID { get; set; }

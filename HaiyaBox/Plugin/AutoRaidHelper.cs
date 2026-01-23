@@ -33,11 +33,11 @@ namespace HaiyaBox.Plugin
             /*if (ECHelper.ClientState.LocalContentId != 18014449510753729)
                 return null;*/
             // 注册原有触发器
-            TriggerMgr.Instance.Add("嗨呀AE工具", new 指定职能tp指定位置().GetType());
-            TriggerMgr.Instance.Add("嗨呀AE工具", new 检测目标位置().GetType());
-            TriggerMgr.Instance.Add("嗨呀AE工具", new 启动bmr().GetType());
-            TriggerMgr.Instance.Add("嗨呀AE工具", new 指定职能使用技能().GetType());
-            TriggerMgr.Instance.Add("嗨呀AE工具", new 使用技能动作().GetType());
+            TriggerMgr.Instance.Add("嗨呀AE工具", new 指定职能tp指定位置A().GetType());
+            TriggerMgr.Instance.Add("嗨呀AE工具", new 检测目标位置A().GetType());
+            TriggerMgr.Instance.Add("嗨呀AE工具", new 启动bmRA().GetType());
+            TriggerMgr.Instance.Add("嗨呀AE工具", new 指定职能使用技能A().GetType());
+            TriggerMgr.Instance.Add("嗨呀AE工具", new 使用技能动作A().GetType());
 
 
             actorControlHook = new ActorControlHook();

@@ -4,7 +4,7 @@ using Dalamud.Bindings.ImGui;
 
 namespace HaiyaBox.Triggers.TriggerAction;
 
-public class 启动bmr : ITriggerAction
+public class 启动bmRA : ITriggerAction
 {
     public bool Draw()
     {

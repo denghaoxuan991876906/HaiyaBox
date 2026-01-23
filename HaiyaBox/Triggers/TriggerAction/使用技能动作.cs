@@ -67,7 +67,7 @@ public enum SkillType
 /// 使用技能动作
 /// 通过遥控释放指定职能的技能
 /// </summary>
-public class 使用技能动作 : ITriggerAction
+public class 使用技能动作A : ITriggerAction
 {
     /// <summary>
     /// 目标职能
@@ -84,7 +84,7 @@ public class 使用技能动作 : ITriggerAction
     /// <summary>
     /// 显示名称
     /// </summary>
-    public string DisplayName => "使用技能";
+    public string DisplayName => "使用技能动作";
 
     /// <summary>
     /// 备注说明

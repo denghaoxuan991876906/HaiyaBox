@@ -10,7 +10,7 @@ using HaiyaBox.Utils;
 
 namespace HaiyaBox.Triggers.TriggerAction;
 
-public class 指定职能使用技能: ITriggerAction
+public class 指定职能使用技能A : ITriggerAction
 {
     public string DisplayName { get; } = "指定职能使用技能";
     public string Remark { get; set; } = string.Empty; // 为 Remark 提供默认值

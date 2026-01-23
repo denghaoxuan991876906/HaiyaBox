@@ -6,9 +6,9 @@ using Dalamud.Bindings.ImGui;
 
 namespace HaiyaBox.Triggers.TriggerAction;
 
-public class 指定职能tp指定位置 : ITriggerAction
+public class 指定职能tp指定位置A : ITriggerAction
 {
-    public string DisplayName { get; } = "指定职能tp指定位置";
+    public string DisplayName { get; } = "指定职能TP指定位置";
     public string Remark { get; set; } = string.Empty; // 为 Remark 提供默认值
 
     // 为每个职能分配单独的坐标
