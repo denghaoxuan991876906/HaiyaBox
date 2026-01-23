@@ -237,7 +237,7 @@ namespace HaiyaBox.UI
             if (ImGui.Button("添加到TrustDebug##xyz"))
             {
                 var pos = new Vector3(_inputX, _inputY, _inputZ);
-                Share.TrustDebugPoint.Add(pos);
+                DebugPoint.Add(pos);
             }
             ImGui.Spacing();
             ImGui.Separator();
@@ -462,7 +462,7 @@ namespace HaiyaBox.UI
                     var result = GeometryUtilsXZ.Forward(StringToVector3(_forwardCenters[i]), _forwardAngles[i]*Single.Pi/180,
                         _forwardDistances[i]);
                     _forwardResults[i] = result;
-                    Share.TrustDebugPoint.Add(result);
+                    DebugPoint.Add(result);
                 }
                 
                 ImGui.SameLine();
@@ -497,7 +497,7 @@ namespace HaiyaBox.UI
                 {
                     var result = GeometryUtilsXZ.RotateAroundPoint(StringToVector3(_rotationReferencePoints[i]), StringToVector3(_rotationCenters[i]), _rotationAngles[i]);
                     _rotationResults[i] = result;
-                    Share.TrustDebugPoint.Add(result);
+                    DebugPoint.Add(result);
                 }
 
                 ImGui.SameLine();
@@ -534,7 +534,7 @@ namespace HaiyaBox.UI
                 {
                     var result = GeometryUtilsXZ.ExtendPoint(StringToVector3(_extensionPoints[i]), StringToVector3(_extensionDirections[i]), _extensionDistances[i]);
                     _extensionResults[i] = result;
-                    Share.TrustDebugPoint.Add(result);
+                    DebugPoint.Add(result);
                 }
 
                 ImGui.SameLine();
@@ -747,13 +747,13 @@ namespace HaiyaBox.UI
         private void AddDebugPoint(Vector3 point)
         {
             LogHelper.Print($"添加Debug点: {point}");
-            Share.TrustDebugPoint.Add(point);
+            DebugPoint.Add(point);
         }
 
         private void ClearDebugPoints()
         {
             LogHelper.Print("清理Debug点");
-            Share.TrustDebugPoint.Clear();
+            DebugPoint.Clear();
         }
 
         #endregion

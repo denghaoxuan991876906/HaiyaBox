@@ -74,6 +74,11 @@ namespace HaiyaBox.UI
         private bool _overlayEnabled;
         private bool _overlayDirty = true;
 
+        /// <summary>
+        /// 获取 DangerAreaRenderer 实例，供外部模块使用。
+        /// </summary>
+        public DangerAreaRenderer Renderer => _dangerAreaRenderer;
+
         #endregion
 
         #region Public Methods

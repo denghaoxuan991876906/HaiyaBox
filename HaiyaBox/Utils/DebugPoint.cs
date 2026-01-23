@@ -1,10 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
-using AEAssist;
-using AEAssist.Helper;
 using Dalamud.Bindings.ImGui;
-using ECommons.DalamudServices;
+using HaiyaBox.Rendering;
 using HaiyaBox.Settings;
 
 namespace HaiyaBox.Utils;
@@ -14,129 +12,83 @@ public static class DebugPoint
     private const float Radius = 4f;
     private const float LineThickness = 2f;
     private const float LabelOffset = 4f;
-    private static bool _subscribed;
-    public static List<Vector3> Point;
-    public static Dictionary<string, Vector3> DebugPointWithText;
 
-    public static void Initialize()
+    public static List<Vector3> Point = new();
+    public static Dictionary<string, Vector3> DebugPointWithText = new();
+
+    private static DangerAreaRenderer? _renderer;
+    private static Func<List<DisplayObject>>? _callback;
+
+    public static void Initialize(DangerAreaRenderer renderer)
     {
-        if (_subscribed)
-        {
-            return;
-        }
-
-        Svc.PluginInterface.UiBuilder.Draw += Render;
-        _subscribed = true;
+        _renderer = renderer;
+        _callback = GetDisplayObjects;
+        _renderer.RegisterTempObjectCallback(_callback);
     }
 
     public static void Dispose()
     {
-        if (!_subscribed)
+        if (_renderer != null && _callback != null)
         {
-            return;
+            _renderer.UnregisterTempObjectCallback(_callback);
         }
-
-        Svc.PluginInterface.UiBuilder.Draw -= Render;
-        _subscribed = false;
+        _renderer = null;
+        _callback = null;
     }
 
     public static void Add(Vector3 pos) => Point.Add(pos);
 
-    public static void Clear() => Point.Clear();
-
-    private static void Render()
+    public static void Clear()
     {
-        if (!FullAutoSettings.Instance.FaGeneralSetting.PrintDebugInfo)
-        {
-            return;
-        }
-
-        try
-        {
-            var points = Point;
-            var labeledPoints = DebugPointWithText;
-
-            var hasPoints = points != null && points.Count > 0;
-            var hasLabels = labeledPoints != null && labeledPoints.Count > 0;
-
-            if (!hasPoints && !hasLabels)
-            {
-                return;
-            }
-
-            var drawList = ImGui.GetForegroundDrawList();
-            uint red = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0f, 0f, 1f));
-            uint yellow = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 0f, 1f));
-            uint green = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2f, 1f, 0.2f, 1f));
-
-            List<Vector3>? snapshot = null;
-            if (hasPoints)
-            {
-                snapshot = new List<Vector3>(points);
-            }
-
-            if (snapshot != null && snapshot.Count > 1)
-            {
-                for (int i = 0; i < snapshot.Count - 1; i++)
-                {
-                    if (TryProject(snapshot[i], out var p1) && TryProject(snapshot[i + 1], out var p2))
-                    {
-                        drawList.AddLine(p1, p2, red, LineThickness);
-                    }
-                }
-            }
-
-            if (snapshot != null)
-            {
-                for (int i = 0; i < snapshot.Count; i++)
-                {
-                    if (!TryProject(snapshot[i], out var screenPos))
-                    {
-                        continue;
-                    }
-
-                    drawList.AddCircleFilled(screenPos, Radius, red);
-                    var textPos = new Vector2(screenPos.X + Radius + LabelOffset, screenPos.Y - Radius / 2f);
-                    drawList.AddText(textPos, yellow, $"[{i + 1}]");
-                }
-            }
-
-            if (hasLabels)
-            {
-                var labelSnapshot = new List<(string Label, Vector3 Position)>();
-                foreach (var entry in labeledPoints)
-                {
-                    string label = entry.Key is null ? string.Empty : entry.Key.ToString();
-                    if (string.IsNullOrWhiteSpace(label))
-                    {
-                        continue;
-                    }
-
-                    labelSnapshot.Add((label, entry.Value));
-                }
-
-                foreach (var item in labelSnapshot)
-                {
-                    if (!TryProject(item.Position, out var screenPos))
-                    {
-                        continue;
-                    }
-
-                    drawList.AddCircleFilled(screenPos, Radius, green);
-                    var textPos = new Vector2(screenPos.X + Radius + LabelOffset, screenPos.Y - Radius / 2f);
-                    drawList.AddText(textPos, yellow, item.Label);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            LogHelper.PrintError($"DebugPoint.Render failed: {ex.Message}");
-        }
+        Point.Clear();
+        DebugPointWithText.Clear();
     }
 
-    private static bool TryProject(Vector3 world, out Vector2 screen)
+    private static List<DisplayObject> GetDisplayObjects()
     {
-        screen = Vector2.Zero;
-        return Svc.GameGui != null && Svc.GameGui.WorldToScreen(world, out screen);
+        var result = new List<DisplayObject>();
+
+        if (!FullAutoSettings.Instance.FaGeneralSetting.PrintDebugInfo)
+        {
+            return result;
+        }
+
+        uint red = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 0f, 0f, 1f));
+        uint yellow = ImGui.ColorConvertFloat4ToU32(new Vector4(1f, 1f, 0f, 1f));
+        uint green = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2f, 1f, 0.2f, 1f));
+
+        // Draw lines between points
+        if (Point.Count > 1)
+        {
+            for (int i = 0; i < Point.Count - 1; i++)
+            {
+                result.Add(new DisplayObjectLine(Point[i], Point[i + 1], red, LineThickness));
+            }
+        }
+
+        // Draw points with indices
+        for (int i = 0; i < Point.Count; i++)
+        {
+            var pos = Point[i];
+            result.Add(new DisplayObjectDot(pos, Radius, red));
+            var labelPos = pos + new Vector3(0f, 0.5f, 0f);
+            result.Add(new DisplayObjectText(labelPos, $"[{i + 1}]", 0x80000000, yellow, 1f));
+        }
+
+        // Draw labeled points
+        foreach (var entry in DebugPointWithText)
+        {
+            string label = entry.Key is null ? string.Empty : entry.Key.ToString();
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                continue;
+            }
+
+            result.Add(new DisplayObjectDot(entry.Value, Radius, green));
+            var labelPos = entry.Value + new Vector3(0f, 0.5f, 0f);
+            result.Add(new DisplayObjectText(labelPos, label, 0x80000000, yellow, 1f));
+        }
+
+        return result;
     }
 }

@@ -12,6 +12,8 @@ public sealed class DangerAreaRenderer : IDisposable
     private const int CircleSegments = 64;
     private readonly object _sync = new();
     private readonly List<DisplayObject> _objects = new();
+    private readonly List<DisplayObject> _tempObjects = new();
+    private readonly List<Func<List<DisplayObject>>> _tempObjectCallbacks = new();
     private bool _enabled;
     private bool _subscribed;
 
@@ -36,6 +38,41 @@ public sealed class DangerAreaRenderer : IDisposable
         }
     }
 
+    public void AddTempObjects(IEnumerable<DisplayObject> objects)
+    {
+        if(objects == null) return;
+        lock(_sync)
+        {
+            _tempObjects.AddRange(objects);
+        }
+    }
+
+    public void ClearTempObjects()
+    {
+        lock(_sync)
+        {
+            _tempObjects.Clear();
+        }
+    }
+
+    public void RegisterTempObjectCallback(Func<List<DisplayObject>> callback)
+    {
+        if(callback == null) return;
+        lock(_sync)
+        {
+            _tempObjectCallbacks.Add(callback);
+        }
+    }
+
+    public void UnregisterTempObjectCallback(Func<List<DisplayObject>> callback)
+    {
+        if(callback == null) return;
+        lock(_sync)
+        {
+            _tempObjectCallbacks.Remove(callback);
+        }
+    }
+
     private void UpdateSubscription()
     {
         if(_enabled && !_subscribed)
@@ -55,10 +92,15 @@ public sealed class DangerAreaRenderer : IDisposable
         if(!_enabled) return;
 
         List<DisplayObject> snapshot;
+        List<DisplayObject> tempSnapshot;
+        List<Func<List<DisplayObject>>> callbacks;
         lock(_sync)
         {
-            if(_objects.Count == 0) return;
+            if(_objects.Count == 0 && _tempObjects.Count == 0 && _tempObjectCallbacks.Count == 0) return;
             snapshot = new List<DisplayObject>(_objects);
+            tempSnapshot = new List<DisplayObject>(_tempObjects);
+            callbacks = new List<Func<List<DisplayObject>>>(_tempObjectCallbacks);
+            _tempObjects.Clear();
         }
 
         ImGuiHelpers.ForceNextWindowMainViewport();
@@ -70,25 +112,54 @@ public sealed class DangerAreaRenderer : IDisposable
 
         foreach(var obj in snapshot)
         {
-            switch(obj)
+            RenderObject(drawList, obj);
+        }
+
+        foreach(var obj in tempSnapshot)
+        {
+            RenderObject(drawList, obj);
+        }
+
+        foreach(var callback in callbacks)
+        {
+            try
             {
-                case DisplayObjectCircle circle:
-                    DrawCircle(drawList, circle);
-                    break;
-                case DisplayObjectLine line:
-                    DrawLine(drawList, line);
-                    break;
-                case DisplayObjectDot dot:
-                    DrawDot(drawList, dot);
-                    break;
-                case DisplayObjectText text:
-                    DrawText(drawList, text);
-                    break;
+                var objects = callback();
+                if(objects != null)
+                {
+                    foreach(var obj in objects)
+                    {
+                        RenderObject(drawList, obj);
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore callback errors
             }
         }
 
         ImGui.End();
         ImGui.PopStyleVar();
+    }
+
+    private static void RenderObject(ImDrawListPtr drawList, DisplayObject obj)
+    {
+        switch(obj)
+        {
+            case DisplayObjectCircle circle:
+                DrawCircle(drawList, circle);
+                break;
+            case DisplayObjectLine line:
+                DrawLine(drawList, line);
+                break;
+            case DisplayObjectDot dot:
+                DrawDot(drawList, dot);
+                break;
+            case DisplayObjectText text:
+                DrawText(drawList, text);
+                break;
+        }
     }
 
     private static void DrawLine(ImDrawListPtr drawList, DisplayObjectLine line)

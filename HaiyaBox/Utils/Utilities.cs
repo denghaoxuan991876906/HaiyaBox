@@ -19,7 +19,7 @@ public static class Utilities
     public static void SetPosAndDebugPoint(string regexRole, Vector3 position)
     {
         RemoteControlHelper.SetPos(regexRole, position);
-        Share.TrustDebugPoint.Add(position);
+        DebugPoint.Add(position);
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ public static class Utilities
     public static void LockPosAndDebugPoint(string regexRole, Vector3 position, int time = 10000)
     {
         RemoteControlHelper.LockPos(regexRole, position, time);
-        Share.TrustDebugPoint.Add(position);
+        DebugPoint.Add(position);
     }
 
     /// <summary>
@@ -447,7 +447,7 @@ public static class Utilities
                 if (!FullAutoSettings.Instance.FaGeneralSetting.PrintDebugInfo)
                     return;
                 LogHelper.Print($"{dev}: {n} 移动至 {pos}");
-                Share.TrustDebugPoint.Add(pos);
+                DebugPoint.Add(pos);
             }
 
         }
@@ -479,7 +479,7 @@ public static class Utilities
                 if (!FullAutoSettings.Instance.FaGeneralSetting.PrintDebugInfo)
                     return;
                 LogHelper.Print($"{dev}: {name} 绿玩移动至 {pos}");
-                Share.TrustDebugPoint.Add(pos);
+                DebugPoint.Add(pos);
             }
         }
         catch (Exception ex)
@@ -511,7 +511,7 @@ public static class Utilities
                 if (!FullAutoSettings.Instance.FaGeneralSetting.PrintDebugInfo)
                     return;
                 LogHelper.Print($"{dev}: {n} 锁定在 {pos} {duration}ms");
-                Share.TrustDebugPoint.Add(pos);
+                DebugPoint.Add(pos);
             }
 
         }
