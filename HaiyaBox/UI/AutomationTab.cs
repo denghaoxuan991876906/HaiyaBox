@@ -244,21 +244,6 @@ namespace HaiyaBox.UI
             LogHelper.Print($"副本任务完成（DutyCompleted 事件，ID: {e}）");
             _dutyCompleted = true; // 标记副本已完成
             _runtimes++;
-            if (Settings.DRCmdEnabled)
-            {
-                RemoteControl.Cmd("", "/xlenableplugin LazyLoot");
-                RemoteControl.Cmd("", "/fulf on");
-                RemoteControl.Cmd(_rollRoles, "/fulf need");
-                if (_passRoles != "")
-                    RemoteControl.Cmd(_passRoles, "/fulf greed");
-            }
-            else 
-            {
-                RemoteControl.Cmd("", "/xsz-fulf on");
-                RemoteControl.Cmd(_rollRoles, "/xsz-fulf need");
-                if (_passRoles != "")
-                    RemoteControl.Cmd(_passRoles, "/xsz-fulf greed");
-            }
             // 查找字典中是否存在与当前副本 ID 对应的更新操作
             if (_dutyUpdateActions.TryGetValue((DutyType)e, out var updateAction))
             {
