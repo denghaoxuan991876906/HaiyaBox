@@ -1,6 +1,8 @@
 ﻿using System.Numerics;
+using AEAssist.CombatRoutine.Module.Target;
 using AEAssist.CombatRoutine.Trigger;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Utility.Numerics;
 using ECommons.DalamudServices;
 using HaiyaBox.Utils;
 
@@ -34,6 +36,7 @@ public class 四运数据 :IMechanismState
     public List<Vector3> 火塔 = new();
     public List<四运玩家> 玩家分身 = new List<四运玩家>();
     public List<四运Boss分身> Boss分身 = new List<四运Boss分身>();
+    public List<小世界塔> 四运塔 = new List<小世界塔>();
 }
 
 public class 四运玩家
@@ -127,10 +130,64 @@ public class 四运Boss分身
         }
     }
 }
-
 public enum 类型
+
 {
     无,
     分摊,
     大圈,
+}
+
+public enum 塔类型
+{
+    无,
+    风,
+    土,
+    暗,
+    火,
+}
+public class 小世界塔
+{
+    public 塔类型 类型 = new();
+    public int 分组 = 0;
+    public int 方位;
+    public Vector3 位置 = new Vector3(100, 0, 100);
+    public Vector3 踩塔位置 = new Vector3(100, 0, 100);
+    public string 分配玩家 = "";
+
+    public void Update(IGameObject battleChara)
+    {
+        类型 = battleChara.BaseId switch
+        {
+            2015013 => 塔类型.风,
+            2015014 => 塔类型.暗,
+            2015015 => 塔类型.土,
+            2015016 => 塔类型.火,
+            _ => 塔类型.无
+        };
+        位置 = battleChara.Position;
+        分组 = 位置.X > 100 ? 2 : 1;
+        方位 = GeometryUtilsXZ.PositionTo4Dir(位置, 分组 is 1? new Vector3(86, 0, 100) : new Vector3(114, 0, 100));
+        if (类型 is 塔类型.土 or 塔类型.火)
+        {
+            踩塔位置 = 位置;
+        }
+
+        if (类型 is 塔类型.暗)
+        {
+            if (方位 is 0 or 3)
+            {
+                踩塔位置 = 位置.WithZ(位置.Z - 2);
+            }
+            else
+            {
+                踩塔位置 = 位置.WithZ(位置.Z + 2);
+            }
+        }
+
+        if (类型 is 塔类型.风)
+        {
+            踩塔位置 = 位置.WithX(位置.X + 分组 is 1 ? 2 : -2);
+        }
+    }
 }

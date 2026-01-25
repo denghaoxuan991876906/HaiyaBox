@@ -10,6 +10,30 @@ public static class GeometryUtilsXZ
         var r = Math.Round(4 - 4 * Math.Atan2(point.X - centre.X, point.Z - centre.Z) / Math.PI) % 8;
         return (int)r;
     }
+
+    /// <summary>
+    /// 计算点相对于中心点的4方向
+    /// 将圆周分为4个象限，每个象限90度
+    /// </summary>
+    /// <param name="point">目标点</param>
+    /// <param name="centre">中心点</param>
+    /// <returns>方向值: N=0(315°-45°), E=1(45°-135°), S=2(135°-225°), W=3(225°-315°)</returns>
+    public static int PositionTo4Dir(Vector3 point, Vector3 centre)
+    {
+        // 计算角度（弧度），然后转换为度数，范围 0-360
+        var angle = Math.Atan2(point.X - centre.X, centre.Z - point.Z) * 180 / Math.PI;
+        if (angle < 0) angle += 360;
+
+        // 划分4个方向，每个方向90度范围
+        // N: 315°-45° (包含北)
+        // E: 45°-135° (包含东)
+        // S: 135°-225° (包含南)
+        // W: 225°-315° (包含西)
+        if (angle >= 315 || angle < 45) return 0;  // N
+        if (angle >= 45 && angle < 135) return 1;  // E
+        if (angle >= 135 && angle < 225) return 2; // S
+        return 3;  // W (225°-315°)
+    }
     public static Vector3 ExtendPoint(Vector3 centerPoint, Vector3 referencePoint, float distanceToExtend)
     {
         // 将Vector3转换为Vector2进行平面计算
