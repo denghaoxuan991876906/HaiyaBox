@@ -37,6 +37,10 @@ public class 四运数据 :IMechanismState
     public List<四运玩家> 玩家分身 = new List<四运玩家>();
     public List<四运Boss分身> Boss分身 = new List<四运Boss分身>();
     public List<小世界塔> 四运塔 = new List<小世界塔>();
+    public List<string> 左组远引导 = new List<string>();
+    public List<string> 左组近引导 = new List<string>();
+    public List<string> 右组远引导 = new List<string>();
+    public List<string> 右组近引导 = new List<string>();
 }
 
 public class 四运玩家
@@ -177,17 +181,17 @@ public class 小世界塔
         {
             if (方位 is 0 or 3)
             {
-                踩塔位置 = new Vector3(battleChara.Position.X, battleChara.Position.Y, battleChara.Position.Z-2);
+                踩塔位置 = battleChara.Position.WithZ(battleChara.Position.Z - 2);
             }
             else
             {
-                踩塔位置 = new Vector3(battleChara.Position.X, battleChara.Position.Y, battleChara.Position.Z+2);
+                踩塔位置 = battleChara.Position.WithZ(battleChara.Position.Z + 2);
             }
         }
 
         if (类型 is 塔类型.风)
         {
-            踩塔位置 = new Vector3(battleChara.Position.X+ 分组 is 1 ? 2 : -2, battleChara.Position.Y, battleChara.Position.Z);//battleChara.Position.WithX(battleChara.Position.X + 分组 is 1 ? 2 : -2);
+            踩塔位置 = battleChara.Position.WithX(battleChara.Position.X + (分组 is 1 ? 2 : -2));
         }
     }
 }
