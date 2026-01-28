@@ -73,6 +73,7 @@ namespace HaiyaBox.UI
         private readonly DangerAreaRenderConfig _renderConfig = DangerAreaRenderConfig.Default;
         public static bool OverlayEnabled;
         private bool _overlayDirty = true;
+        private static DangerAreaTab _instance;
 
         /// <summary>
         /// 获取 DangerAreaRenderer 实例，供外部模块使用。
@@ -82,6 +83,23 @@ namespace HaiyaBox.UI
         #endregion
 
         #region Public Methods
+
+        /// <summary>
+        /// 构造函数，设置静态实例引用。
+        /// </summary>
+        public DangerAreaTab()
+        {
+            _instance = this;
+        }
+
+        /// <summary>
+        /// 静态方法：切换可视化状态，供 GeometryTab 等外部模块调用。
+        /// </summary>
+        public static void ToggleOverlayStatic(bool enabled)
+        {
+            if (_instance == null) return;
+            _instance.ToggleOverlay(enabled);
+        }
 
         /// <summary>
         /// 更新可视化状态。

@@ -130,8 +130,7 @@ namespace HaiyaBox.UI
         }
 
         #endregion
-        // 可视化相关
-        private readonly DangerAreaRenderer _dangerAreaRenderer = new();
+
         #region UI Drawing Methods
 
         private void DrawVisualizationSection()
@@ -141,7 +140,7 @@ namespace HaiyaBox.UI
                 bool enabled = DangerAreaTab.OverlayEnabled;
                 if (ImGui.Checkbox("绘制Debug点", ref enabled))
                 {
-                    DangerAreaTab.OverlayEnabled = enabled;
+                    DangerAreaTab.ToggleOverlayStatic(enabled);
                 }
 
                 ImGui.SameLine();
