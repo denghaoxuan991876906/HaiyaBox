@@ -292,11 +292,6 @@ namespace HaiyaBox.UI
                 Settings.UpdateXszCmdEnabled(!drCmdEnabled);
             }
 
-            if (ImGui.Button("搞事"))
-            {
-                VIPHelper.TryChangeVIPLevel(VIPLevel.Develop);
-                LogHelper.Print($"{Share.VIP.Level}");
-            }
             ImGui.SameLine();
             ImGui.Text($"当前{toggleLabel}");
             // 按钮用于记录当前地图ID，并更新相应设置
