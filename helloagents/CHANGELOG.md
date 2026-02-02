@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-02-02
+
+### 微调
+- **[Project]**: 移除 AOESafetyCalculator.Tests 的 InternalsVisibleTo
+  - 类型: 微调（无方案包）
+  - 文件: HaiyaBox/HaiyaBox.csproj:38-48
+
+- **[Tests]**: 移除 AOEShapeDebug 调试绘制单元测试
+  - 类型: 微调（无方案包）
+  - 文件: tests/AOESafetyCalculator.Tests/AOEShapeDebugTests.cs:1-58
+
 ## [0.3.0] - 2026-02-02
 
 ### 新增
