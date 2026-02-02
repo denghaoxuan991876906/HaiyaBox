@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-02-02
+
+### 微调
+- **[Tests]**: 清理 AOESafetyCalculator 测试工程与用例
+  - 类型: 微调（无方案包）
+  - 文件: tests/AOESafetyCalculator.Tests/AOESafetyCalculator.Tests.csproj:1-22
+  - 文件: tests/AOESafetyCalculator.Tests/AOESafetyCalculatorBehaviorTests.cs:1-52
+
 ## [0.3.1] - 2026-02-02
 
 ### 微调
