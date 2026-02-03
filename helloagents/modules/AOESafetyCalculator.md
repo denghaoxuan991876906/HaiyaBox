@@ -51,9 +51,14 @@
   2. `InvertForbiddenZone=true` 时切换为反向距离场
 **结果**: 返回可用于距离查询的 ShapeDistance 实例
 
+### UI 形状配置
+**条件**: DangerAreaTab 添加/删除 AOEShape
+**行为**: 以 AOEShape 保存危险区数据并刷新 overlay
+**结果**: AOE 形状在游戏画面中可视化
+
 ## 依赖关系
 
 ```yaml
 依赖: (无外部依赖)
-被依赖: Rendering, Triggers, Utils (潜在使用)
+被依赖: Rendering, UI, Triggers, Utils (潜在使用)
 ```

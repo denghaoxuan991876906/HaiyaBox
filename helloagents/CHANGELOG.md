@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-02-03
+
+### 变更
+- **[UI]**: DangerAreaTab 替换为 AOESafetyCalculator 形状配置与绘制界面
+  - 方案: [202602031326_aoe-safety-calculator-ui](archive/2026-02/202602031326_aoe-safety-calculator-ui/)
+
+- **[AOESafetyCalculator]**: 接入 AOEShape 列表驱动的 overlay 绘制
+  - 方案: [202602031326_aoe-safety-calculator-ui](archive/2026-02/202602031326_aoe-safety-calculator-ui/)
+
 ## [0.3.2] - 2026-02-02
 
 ### 微调
