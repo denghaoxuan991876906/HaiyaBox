@@ -61,6 +61,49 @@ public class XszRemote
     }
 
     /// <summary>
+    /// 延迟移动指定角色到目标位置
+    /// </summary>
+    /// <param name="role">角色名称</param>
+    /// <param name="pos">目标位置</param>
+    /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
+    public static void MoveManaged(string role, Vector3 pos, int battleTimeMs)
+    {
+        Instance?.MoveManaged(role, pos, battleTimeMs);
+    }
+
+    /// <summary>
+    /// 延迟传送指定角色到目标位置
+    /// </summary>
+    /// <param name="role">角色名称</param>
+    /// <param name="pos">目标位置</param>
+    /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
+    public static void SetPosManaged(string role, Vector3 pos, int battleTimeMs)
+    {
+        Instance?.SetPosManaged(role, pos, battleTimeMs);
+    }
+
+    /// <summary>
+    /// 设置集合信息
+    /// </summary>
+    /// <param name="role">角色名称</param>
+    /// <param name="assembleMode">集合模式</param>
+    /// <param name="assemblePoint">集合预留点</param>
+    public static void SetMoveAssemble(string role, string assembleMode, Vector3 assemblePoint)
+    {
+        Instance?.SetMoveAssemble(role, assembleMode, assemblePoint);
+    }
+
+    /// <summary>
+    /// 设置集合补偿时间
+    /// </summary>
+    /// <param name="role">角色名称</param>
+    /// <param name="delayMs">补偿时间(毫秒)</param>
+    public static void SetMoveAssembleDelay(string role, int delayMs)
+    {
+        Instance?.SetMoveAssembleDelay(role, delayMs);
+    }
+
+    /// <summary>
     /// 设置指定角色的旋转角度
     /// </summary>
     /// <param name="role">角色名称</param>

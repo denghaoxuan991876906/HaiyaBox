@@ -2,6 +2,30 @@
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-02-04
+
+### 新增
+- **[Plugin]**: XSZToolbox 遥控新增延迟移动/传送及集合控制 IPC 封装
+  - 方案: [202602040331_xsz-ipc-move-managed](archive/2026-02/202602040331_xsz-ipc-move-managed/)
+
+- **[Utils]**: XszRemote 补齐延迟移动/传送与集合控制接口
+  - 方案: [202602040331_xsz-ipc-move-managed](archive/2026-02/202602040331_xsz-ipc-move-managed/)
+
+## [0.4.2] - 2026-02-03
+
+### 变更
+- **[UI]**: DangerAreaTab 增加场地参数与安全点计算参数区域，支持计算安全点并绘制
+  - 方案: [202602031642_aoe-safety-ui-params](archive/2026-02/202602031642_aoe-safety-ui-params/)
+
+## [0.4.1] - 2026-02-03
+
+### 修复
+- **[Plugin]**: XSZ IPC 未就绪时房间ID/连接状态返回空值避免异常
+  - 方案: [202602031551_xsz-ipc-roomid-guard](archive/2026-02/202602031551_xsz-ipc-roomid-guard/)
+
+- **[UI]**: AutomationTab 显示 IPC 未就绪提示
+  - 方案: [202602031551_xsz-ipc-roomid-guard](archive/2026-02/202602031551_xsz-ipc-roomid-guard/)
+
 ## [0.4.0] - 2026-02-03
 
 ### 变更

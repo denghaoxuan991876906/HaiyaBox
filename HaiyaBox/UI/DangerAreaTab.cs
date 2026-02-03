@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using AOESafetyCalculator.Core;
+using AOESafetyCalculator.SafetyZone;
 using AOESafetyCalculator.Shapes;
 using Dalamud.Bindings.ImGui;
 using ECommons.DalamudServices;
@@ -48,6 +49,13 @@ namespace HaiyaBox.UI
 
         private readonly List<AoeEntry> _entries = new();
         private readonly DangerAreaRenderer _dangerAreaRenderer = new();
+        private SafeZoneCalculator _safeZoneCalculator = new();
+        private readonly List<WPos> _safePoints = new();
+
+        private static readonly uint SafePointPrimaryColor = PackColor(0.2f, 0.8f, 0.2f, 0.95f);
+        private static readonly uint SafePointSecondaryColor = PackColor(0.2f, 0.6f, 1f, 0.95f);
+        private static readonly uint SafePointLabelBackgroundColor = PackColor(0.05f, 0.05f, 0.05f, 0.8f);
+        private static readonly uint SafePointLabelTextColor = PackColor(1f, 1f, 1f, 1f);
 
         private int _shapeTypeIndex;
         private string _originInput = "100,0,100";
@@ -78,9 +86,37 @@ namespace HaiyaBox.UI
         private string _orbitCenterInput = "100,0,100";
         private Vector3 _orbitCenter = new(100, 0, 100);
 
+        private bool _arenaEnabled = true;
+        private int _arenaTypeIndex;
+        private string _arenaCenterInput = "100,0,100";
+        private Vector3 _arenaCenter = new(100, 0, 100);
+        private float _arenaRadius = 40f;
+        private float _arenaHalfWidth = 20f;
+        private float _arenaHalfLength = 20f;
+        private float _arenaRotationDeg;
+
+        private int _safePointCount = 8;
+        private string _searchCenterInput = "100,0,100";
+        private Vector3 _searchCenter = new(100, 0, 100);
+        private float _searchRadius = 40f;
+        private float _minDistanceBetween = 2f;
+        private float _minAngleBetweenDeg;
+        private bool _useReferencePoint;
+        private bool _orderByReference = true;
+        private int _closeToReferenceCount = 3;
+        private bool _limitByMaxDistance;
+        private float _maxDistanceFromReference = 20f;
+        private string _referencePointInput = "100,0,100";
+        private Vector3 _referencePoint = new(100, 0, 100);
+        private bool _showSafePoints = true;
+        private bool _showSafePointLabels = true;
+        private float _safePointRadius = 6f;
+        private float _safePointLabelHeight = 0.5f;
+
         private bool _overlayDirty = true;
         private int _colorIndex;
         private string _lastError = string.Empty;
+        private string _safePointError = string.Empty;
         private static DangerAreaTab? _instance;
 
         public static bool OverlayEnabled;
@@ -113,8 +149,11 @@ namespace HaiyaBox.UI
         {
             DrawHeaderSection();
             DrawOverlaySection();
+            DrawArenaSection();
+            DrawSafePointParameterSection();
             DrawShapeConfigSection();
             DrawShapeListSection();
+            DrawSafePointResultSection();
             SyncOverlayIfNeeded();
         }
 
@@ -145,6 +184,214 @@ namespace HaiyaBox.UI
                 ImGui.TextColored(statusColor, enabled ? "绘制已开启" : "绘制已关闭");
                 ImGui.Spacing();
             }
+        }
+
+        private void DrawArenaSection()
+        {
+            if (!ImGui.CollapsingHeader("场地参数设置", ImGuiTreeNodeFlags.DefaultOpen))
+            {
+                return;
+            }
+
+            ImGui.Checkbox("启用场地限制", ref _arenaEnabled);
+
+            var arenaLabel = _arenaTypeIndex == 0 ? "圆形" : "矩形";
+            if (ImGui.BeginCombo("场地类型", arenaLabel))
+            {
+                if (ImGui.Selectable("圆形", _arenaTypeIndex == 0))
+                {
+                    _arenaTypeIndex = 0;
+                }
+                if (ImGui.Selectable("矩形", _arenaTypeIndex == 1))
+                {
+                    _arenaTypeIndex = 1;
+                }
+                ImGui.EndCombo();
+            }
+
+            ImGui.Text("场地中心 (x,y,z):");
+            ImGui.InputText("场地中心##ArenaCenter", ref _arenaCenterInput, 64);
+
+            if (ImGui.Button("设置场地中心##ArenaCenter"))
+            {
+                if (TryParseVector3(_arenaCenterInput, out var pos))
+                {
+                    _arenaCenter = pos;
+                    _safePointError = string.Empty;
+                }
+                else
+                {
+                    _safePointError = "场地中心格式错误，示例: 100,0,100";
+                }
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("使用玩家位置##ArenaCenter"))
+            {
+                var player = Svc.ClientState.LocalPlayer;
+                if (player != null)
+                {
+                    _arenaCenter = player.Position;
+                    _arenaCenterInput = $"{player.Position.X:F1},{player.Position.Y:F1},{player.Position.Z:F1}";
+                    _safePointError = string.Empty;
+                }
+            }
+
+            ImGui.Text($"当前场地中心: {FormatVector3(_arenaCenter)}");
+
+            if (_arenaTypeIndex == 0)
+            {
+                ImGui.InputFloat("场地半径", ref _arenaRadius, 1f, 5f);
+            }
+            else
+            {
+                ImGui.InputFloat("半宽", ref _arenaHalfWidth, 0.5f, 1f);
+                ImGui.InputFloat("半长", ref _arenaHalfLength, 0.5f, 1f);
+                ImGui.InputFloat("朝向角度(度)", ref _arenaRotationDeg, 1f, 5f);
+            }
+
+            ImGui.Spacing();
+        }
+
+        private void DrawSafePointParameterSection()
+        {
+            if (!ImGui.CollapsingHeader("安全点计算参数设置", ImGuiTreeNodeFlags.DefaultOpen))
+            {
+                return;
+            }
+
+            ImGui.InputInt("安全点数量", ref _safePointCount, 1, 1);
+
+            ImGui.Text("搜索中心 (x,y,z):");
+            ImGui.InputText("搜索中心##SafeCenter", ref _searchCenterInput, 64);
+            if (ImGui.Button("设置搜索中心##SafeCenter"))
+            {
+                if (TryParseVector3(_searchCenterInput, out var pos))
+                {
+                    _searchCenter = pos;
+                    _safePointError = string.Empty;
+                }
+                else
+                {
+                    _safePointError = "搜索中心格式错误，示例: 100,0,100";
+                }
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("使用场地中心##SafeCenter"))
+            {
+                _searchCenter = _arenaCenter;
+                _searchCenterInput = $"{_arenaCenter.X:F1},{_arenaCenter.Y:F1},{_arenaCenter.Z:F1}";
+                _safePointError = string.Empty;
+            }
+            ImGui.Text($"当前搜索中心: {FormatVector3(_searchCenter)}");
+
+            ImGui.InputFloat("搜索半径", ref _searchRadius, 1f, 5f);
+            ImGui.InputFloat("最小间距", ref _minDistanceBetween, 0.1f, 0.5f);
+            ImGui.InputFloat("最小角度间隔(度)", ref _minAngleBetweenDeg, 1f, 5f);
+
+            ImGui.Separator();
+
+            ImGui.Checkbox("使用参考点", ref _useReferencePoint);
+            if (_useReferencePoint)
+            {
+                ImGui.Text("参考点 (x,y,z):");
+                ImGui.InputText("参考点##ReferencePoint", ref _referencePointInput, 64);
+                if (ImGui.Button("设置参考点##ReferencePoint"))
+                {
+                    if (TryParseVector3(_referencePointInput, out var pos))
+                    {
+                        _referencePoint = pos;
+                        _safePointError = string.Empty;
+                    }
+                    else
+                    {
+                        _safePointError = "参考点格式错误，示例: 100,0,100";
+                    }
+                }
+                ImGui.SameLine();
+                if (ImGui.Button("使用玩家位置##ReferencePoint"))
+                {
+                    var player = Svc.ClientState.LocalPlayer;
+                    if (player != null)
+                    {
+                        _referencePoint = player.Position;
+                        _referencePointInput = $"{player.Position.X:F1},{player.Position.Y:F1},{player.Position.Z:F1}";
+                        _safePointError = string.Empty;
+                    }
+                }
+                ImGui.Text($"当前参考点: {FormatVector3(_referencePoint)}");
+
+                ImGui.Checkbox("按参考点排序", ref _orderByReference);
+                ImGui.InputInt("贴近参考点数量", ref _closeToReferenceCount, 1, 1);
+                ImGui.Checkbox("限制与参考点最大距离", ref _limitByMaxDistance);
+                if (_limitByMaxDistance)
+                {
+                    ImGui.InputFloat("参考点最大距离", ref _maxDistanceFromReference, 0.5f, 1f);
+                }
+            }
+
+            ImGui.Separator();
+
+            var showSafePoints = _showSafePoints;
+            if (ImGui.Checkbox("在 Overlay 显示安全点", ref showSafePoints))
+            {
+                _showSafePoints = showSafePoints;
+                MarkOverlayDirty();
+            }
+            ImGui.SameLine();
+            var showLabels = _showSafePointLabels;
+            if (ImGui.Checkbox("显示安全点编号", ref showLabels))
+            {
+                _showSafePointLabels = showLabels;
+                MarkOverlayDirty();
+            }
+
+            ImGui.InputFloat("安全点半径", ref _safePointRadius, 0.5f, 1f);
+            ImGui.InputFloat("编号高度偏移", ref _safePointLabelHeight, 0.1f, 0.2f);
+
+            if (ImGui.Button("计算安全点"))
+            {
+                ComputeSafePoints();
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("清空安全点"))
+            {
+                _safePoints.Clear();
+                _safePointError = string.Empty;
+                MarkOverlayDirty();
+            }
+
+            if (!string.IsNullOrWhiteSpace(_safePointError))
+            {
+                ImGui.TextColored(new Vector4(1f, 0.4f, 0.4f, 1f), _safePointError);
+            }
+
+            ImGui.Spacing();
+        }
+
+        private void DrawSafePointResultSection()
+        {
+            if (!ImGui.CollapsingHeader("安全点结果", ImGuiTreeNodeFlags.DefaultOpen))
+            {
+                return;
+            }
+
+            ImGui.Text($"当前安全点数量: {_safePoints.Count}");
+            if (_safePoints.Count == 0)
+            {
+                ImGui.Text("暂无安全点数据");
+                ImGui.Spacing();
+                return;
+            }
+
+            for (int i = 0; i < _safePoints.Count; i++)
+            {
+                var point = _safePoints[i];
+                ImGui.Text($"{i + 1}. ({point.X:F1}, {point.Z:F1})");
+            }
+
+            ImGui.Spacing();
         }
 
         private void DrawShapeConfigSection()
@@ -405,6 +652,139 @@ namespace HaiyaBox.UI
             return new AOEShapeArcCapsule(_arcCapsuleRadius, _arcCapsuleAngularLengthDeg.Degrees(), WPos.FromVec3(orbitCenter), _invertForbiddenZone);
         }
 
+        private void ComputeSafePoints()
+        {
+            _safePointError = string.Empty;
+            _safePoints.Clear();
+
+            if (_safePointCount <= 0)
+            {
+                _safePointError = "安全点数量必须大于 0";
+                return;
+            }
+
+            if (_searchRadius <= 0f)
+            {
+                _safePointError = "搜索半径必须大于 0";
+                return;
+            }
+
+            if (_minDistanceBetween <= 0f)
+            {
+                _safePointError = "最小间距必须大于 0";
+                return;
+            }
+
+            if (!TryParseVector3(_searchCenterInput, out var searchCenter))
+            {
+                _safePointError = "搜索中心格式错误，示例: 100,0,100";
+                return;
+            }
+
+            _searchCenter = searchCenter;
+
+            var arenaCenter = _arenaCenter;
+            var referencePoint = _referencePoint;
+
+            if (_useReferencePoint && !TryParseVector3(_referencePointInput, out referencePoint))
+            {
+                _safePointError = "参考点格式错误，示例: 100,0,100";
+                return;
+            }
+
+            if (_arenaEnabled && !TryParseVector3(_arenaCenterInput, out arenaCenter))
+            {
+                _safePointError = "场地中心格式错误，示例: 100,0,100";
+                return;
+            }
+
+            if (_arenaEnabled)
+            {
+                _arenaCenter = arenaCenter;
+            }
+
+            if (_useReferencePoint)
+            {
+                _referencePoint = referencePoint;
+            }
+
+            try
+            {
+                _safeZoneCalculator = new SafeZoneCalculator();
+
+                if (_arenaEnabled)
+                {
+                    var arenaWPos = WPos.FromVec3(_arenaCenter);
+                    if (_arenaTypeIndex == 0)
+                    {
+                        _safeZoneCalculator.SetArenaBounds(new CircleArenaBounds(arenaWPos, _arenaRadius));
+                    }
+                    else
+                    {
+                        var direction = _arenaRotationDeg.Degrees().ToDirection();
+                        _safeZoneCalculator.SetArenaBounds(new RectArenaBounds(arenaWPos, direction, _arenaHalfWidth, _arenaHalfLength));
+                    }
+                }
+
+                foreach (var zone in BuildForbiddenZones())
+                {
+                    _safeZoneCalculator.AddForbiddenZone(zone);
+                }
+
+                var query = _safeZoneCalculator.FindSafePositions(
+                    _safePointCount,
+                    WPos.FromVec3(_searchCenter),
+                    _searchRadius,
+                    DateTime.Now)
+                    .MinDistanceBetween(_minDistanceBetween);
+
+                if (_useReferencePoint)
+                {
+                    var reference = WPos.FromVec3(_referencePoint);
+                    if (_limitByMaxDistance && _maxDistanceFromReference > 0f)
+                    {
+                        query = query.NearTarget(reference, _maxDistanceFromReference);
+                    }
+                    else
+                    {
+                        query = query.NearTarget(reference);
+                    }
+
+                    if (_orderByReference)
+                    {
+                        query = query.OrderByDistanceTo(reference);
+                    }
+                }
+
+                if (_minAngleBetweenDeg > 0f)
+                {
+                    query = query.WithMinAngle(WPos.FromVec3(_searchCenter), _minAngleBetweenDeg.Degrees());
+                }
+
+                _safePoints.AddRange(query.Execute());
+                MarkOverlayDirty();
+            }
+            catch (Exception ex)
+            {
+                _safePointError = $"安全点计算失败: {ex.Message}";
+            }
+        }
+
+        private List<ForbiddenZone> BuildForbiddenZones()
+        {
+            var zones = new List<ForbiddenZone>();
+            foreach (var entry in _entries)
+            {
+                if (!entry.Enabled) continue;
+                var origin = WPos.FromVec3(entry.Origin);
+                var distance = entry.Shape.InvertForbiddenZone
+                    ? entry.Shape.InvertedDistance(origin, entry.Rotation)
+                    : entry.Shape.Distance(origin, entry.Rotation);
+                zones.Add(new ForbiddenZone { Shape = distance });
+            }
+            return zones;
+        }
+
         private void ToggleOverlay(bool enabled)
         {
             if (OverlayEnabled == enabled) return;
@@ -435,6 +815,23 @@ namespace HaiyaBox.UI
                 if (objects != null)
                 {
                     payload.AddRange(objects);
+                }
+            }
+
+            if (_showSafePoints && _safePoints.Count > 0)
+            {
+                var closeCount = _useReferencePoint ? Math.Clamp(_closeToReferenceCount, 0, _safePoints.Count) : 0;
+                for (int i = 0; i < _safePoints.Count; i++)
+                {
+                    var point = _safePoints[i];
+                    var color = i < closeCount ? SafePointPrimaryColor : SafePointSecondaryColor;
+                    var pos = new Vector3(point.X, _searchCenter.Y, point.Z);
+                    payload.Add(new DisplayObjectDot(pos, _safePointRadius, color));
+                    if (_showSafePointLabels)
+                    {
+                        var labelPos = pos + new Vector3(0f, _safePointLabelHeight, 0f);
+                        payload.Add(new DisplayObjectText(labelPos, (i + 1).ToString(), SafePointLabelBackgroundColor, SafePointLabelTextColor, 1f));
+                    }
                 }
             }
 

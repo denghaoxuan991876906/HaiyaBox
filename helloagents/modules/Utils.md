@@ -38,6 +38,14 @@
 | `Clear()` | 清空所有调试形状 |
 | `Draw(AOEShape, WPos, Angle, float)` | 以轮廓线方式绘制 AOE 形状，持续指定秒数 |
 
+### XszRemote 公共 API
+| 方法 | 说明 |
+|---------|------|
+| `MoveManaged(role, pos, battleTimeMs)` | 延迟移动到目标位置 |
+| `SetPosManaged(role, pos, battleTimeMs)` | 延迟传送到目标位置 |
+| `SetMoveAssemble(role, mode, point)` | 设置集合模式与预留点 |
+| `SetMoveAssembleDelay(role, delayMs)` | 设置集合补偿时间 |
+
 ### 公共 API
 | 类/方法 | 说明 |
 |---------|------|

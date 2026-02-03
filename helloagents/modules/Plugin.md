@@ -18,7 +18,13 @@
 |------|------|
 | AutoRaidHelper.Execute() | 执行自动战斗逻辑 |
 | TreasureOpenerService.Open() | 开启宝箱 |
-| XSZToolboxIpc.SendMessage() | 发送 IPC 消息 |
+| XSZToolboxIpc.GetRoomId() | 获取房间ID（未就绪返回 null） |
+| XSZToolboxIpc.IsConnected() | 获取连接状态（未就绪返回 false） |
+| XSZToolboxIpc.Cmd() | 发送遥控命令 |
+| XSZToolboxIpc.MoveManaged() | 延迟移动到目标位置 |
+| XSZToolboxIpc.SetPosManaged() | 延迟传送到目标位置 |
+| XSZToolboxIpc.SetMoveAssemble() | 设置集合信息 |
+| XSZToolboxIpc.SetMoveAssembleDelay() | 设置集合补偿时间 |
 
 ## 行为规范
 
@@ -29,8 +35,8 @@
 
 ### IPC 通信
 **条件**: 需要与 XSZ 工具箱通信
-**行为**: 通过 IPC 协议发送和接收消息
-**结果**: 实现跨插件通信
+**行为**: 通过 IPC 协议发送和接收消息，IPC 未就绪时返回空值避免异常
+**结果**: 实现跨插件通信并保持 UI 渲染稳定
 
 ### 调试绘制初始化
 **条件**: 插件加载或卸载

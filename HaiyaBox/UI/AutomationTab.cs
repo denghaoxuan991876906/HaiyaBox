@@ -412,7 +412,14 @@ namespace HaiyaBox.UI
                 XszRemote.Cmd("MT", "/e 调用测试");
             }
             ImGui.SameLine();
-            ImGui.Text($"房间id：{XszRemote.GetRoomId()}");
+            var roomId = XszRemote.GetRoomId();
+            ImGui.Text($"房间id：{(string.IsNullOrEmpty(roomId) ? "未就绪" : roomId)}");
+            if (string.IsNullOrEmpty(roomId))
+            {
+                ImGui.PushStyleColor(ImGuiCol.Text, new Vector4(1f, 0.6f, 0.2f, 1f));
+                ImGui.Text("IPC 未就绪/未注册");
+                ImGui.PopStyleColor();
+            }
             ImGui.Text($"连接状态：{(XszRemote.IsConnected() ? "已连接" : "未连接")}");
             // 全队TP至指定位置，操作为"撞电网"
             if (ImGui.Button("全队TP撞电网"))
