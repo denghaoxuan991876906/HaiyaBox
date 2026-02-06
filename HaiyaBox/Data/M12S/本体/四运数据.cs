@@ -41,6 +41,7 @@ public class 四运数据 :IMechanismState
     public List<string> 左组近引导 = new List<string>();
     public List<string> 右组远引导 = new List<string>();
     public List<string> 右组近引导 = new List<string>();
+    public List<小世界玩家> 小世界玩家 = new();
 }
 
 public class 四运玩家
@@ -150,6 +151,15 @@ public enum 塔类型
     暗,
     火,
 }
+
+public class 小世界玩家
+{
+    public int 分组 = 0;
+    public bool IsMelee = false;
+    public bool 光buff = false;
+    public string 职能 = "none";
+    
+}
 public class 小世界塔
 {
     public 塔类型 类型 = new();
@@ -158,6 +168,7 @@ public class 小世界塔
     public Vector3 位置 = new Vector3(100, 0, 100);
     public Vector3 踩塔位置 = new Vector3(100, 0, 100);
     public string 分配玩家 = "";
+    public bool 近战塔 = false;
 
     public void Update(IGameObject battleChara)
     {
@@ -193,5 +204,10 @@ public class 小世界塔
         {
             踩塔位置 = battleChara.Position.WithX(battleChara.Position.X + (分组 is 1 ? 2 : -2));
         }
+
+        if (分组 is 1 && 方位 is 1 or 2)
+            近战塔 = true;
+        if (分组 is 2 && 方位 is 0 or 3)
+            近战塔 = true;
     }
 }
