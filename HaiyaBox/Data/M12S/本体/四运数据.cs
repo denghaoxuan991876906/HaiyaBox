@@ -151,7 +151,7 @@ public class 小世界塔
     public Vector3 踩塔位置 = new Vector3(100, 0, 100);
     public string 分配玩家 = "";
     public bool 近战塔 = false;
-
+    public bool 是光塔 = false;
     public void Update(IGameObject battleChara)
     {
         类型 = battleChara.BaseId switch
@@ -162,6 +162,7 @@ public class 小世界塔
             2015016 => 塔类型.火,
             _ => 塔类型.无
         };
+        是光塔 = 类型 is 塔类型.土 or 塔类型.火;
         位置 = battleChara.Position;
         分组 = 位置.X > 100 ? 2 : 1;
         方位 = GeometryUtilsXZ.PositionTo4Dir(battleChara.Position, 分组 is 1? new Vector3(86, 0, 100) : new Vector3(114, 0, 100));
