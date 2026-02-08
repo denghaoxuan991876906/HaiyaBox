@@ -41,12 +41,12 @@ namespace HaiyaBox.Plugin;
         /// <summary>
         /// 延迟移动订阅者
         /// </summary>
-        private ICallGateSubscriber<string, Vector3, int, object> _moveManagedSubscriber;
+        private ICallGateSubscriber<string, Vector3, long, object> _moveManagedSubscriber;
 
         /// <summary>
         /// 延迟传送订阅者
         /// </summary>
-        private ICallGateSubscriber<string, Vector3, int, object> _setPosManagedSubscriber;
+        private ICallGateSubscriber<string, Vector3, long, object> _setPosManagedSubscriber;
 
         /// <summary>
         /// 设置集合信息订阅者
@@ -156,8 +156,8 @@ namespace HaiyaBox.Plugin;
             _setPosSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, Vector3, object>("XSZToolbox.RemoteControl.SetPos");
             _lockPosSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, Vector3, int, object>("XSZToolbox.RemoteControl.LockPos");
             _slideTpSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, Vector3, long, object>("XSZToolbox.RemoteControl.SlideTp");
-            _moveManagedSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, Vector3, int, object>("XSZToolbox.RemoteControl.MoveManaged");
-            _setPosManagedSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, Vector3, int, object>("XSZToolbox.RemoteControl.SetPosManaged");
+            _moveManagedSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, Vector3, long, object>("XSZToolbox.RemoteControl.MoveManaged");
+            _setPosManagedSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, Vector3, long, object>("XSZToolbox.RemoteControl.SetPosManaged");
             _setMoveAssembleSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, string, Vector3, object>("XSZToolbox.RemoteControl.SetMoveAssemble");
             _setMoveAssembleDelaySubscriber = Svc.PluginInterface.GetIpcSubscriber<string, int, object>("XSZToolbox.RemoteControl.SetMoveAssembleDelay");
             _setRotSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, float, object>("XSZToolbox.RemoteControl.SetRot");
@@ -248,7 +248,7 @@ namespace HaiyaBox.Plugin;
         /// <param name="role">角色名称</param>
         /// <param name="pos">目标位置</param>
         /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
-        public void MoveManaged(string role, Vector3 pos, int battleTimeMs)
+        public void MoveManaged(string role, Vector3 pos, long battleTimeMs)
         {
             _moveManagedSubscriber?.InvokeAction(role, pos, battleTimeMs);
         }
@@ -259,7 +259,7 @@ namespace HaiyaBox.Plugin;
         /// <param name="role">角色名称</param>
         /// <param name="pos">目标位置</param>
         /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
-        public void SetPosManaged(string role, Vector3 pos, int battleTimeMs)
+        public void SetPosManaged(string role, Vector3 pos, long battleTimeMs)
         {
             _setPosManagedSubscriber?.InvokeAction(role, pos, battleTimeMs);
         }

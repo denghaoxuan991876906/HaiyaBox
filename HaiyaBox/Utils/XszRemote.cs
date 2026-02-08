@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using AEAssist.Helper;
 using HaiyaBox.Plugin;
 
 namespace HaiyaBox.Utils;
@@ -66,7 +67,7 @@ public class XszRemote
     /// <param name="role">角色名称</param>
     /// <param name="pos">目标位置</param>
     /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
-    public static void MoveManaged(string role, Vector3 pos, int battleTimeMs)
+    public static void MoveManaged(string role, Vector3 pos, long battleTimeMs)
     {
         Instance?.MoveManaged(role, pos, battleTimeMs);
     }
@@ -77,7 +78,7 @@ public class XszRemote
     /// <param name="role">角色名称</param>
     /// <param name="pos">目标位置</param>
     /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
-    public static void SetPosManaged(string role, Vector3 pos, int battleTimeMs)
+    public static void SetPosManaged(string role, Vector3 pos, long battleTimeMs)
     {
         Instance?.SetPosManaged(role, pos, battleTimeMs);
     }
