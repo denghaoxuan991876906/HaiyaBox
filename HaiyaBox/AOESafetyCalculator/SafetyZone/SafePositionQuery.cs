@@ -98,11 +98,20 @@ public sealed class SafePositionQuery
         // 2. 过滤不安全的点
         var safePoints = FilterSafePoints(candidates);
 
-        // 3. 应用约束并评分
-        var scoredPoints = ScorePoints(safePoints);
+        // 3. 按距离目标点排序（近的在前）
+        if (targetPosition.HasValue)
+        {
+            var target = targetPosition.Value;
+            safePoints.Sort((a, b) =>
+            {
+                var distA = (a - target).LengthSq();
+                var distB = (b - target).LengthSq();
+                return distA.CompareTo(distB);
+            });
+        }
 
-        // 4. 选择最优的N个点
-        var selectedPoints = SelectBestPoints(scoredPoints);
+        // 4. 选择前N个点（考虑角度约束）
+        var selectedPoints = SelectBestPoints(safePoints);
 
         // 5. 排序（如果指定了排序参考点）
         if (orderByReference.HasValue)
@@ -129,8 +138,30 @@ public sealed class SafePositionQuery
         var grid = new int[gridWidth, gridWidth];
         var activeList = new List<WPos>();
 
-        // 初始化：从搜索中心开始
-        var initialPoint = searchCenter;
+        // 初始化：优先从目标点附近开始采样，如果没有目标点则从搜索中心开始
+        var initialPoint = targetPosition ?? searchCenter;
+        
+        // 确保初始点在搜索范围内
+        if ((initialPoint - searchCenter).Length() > searchRadius)
+        {
+            // 如果目标点超出搜索范围，将初始点投影到搜索边界上
+            var dir = initialPoint - searchCenter;
+            if (dir.Length() > 0.001f)
+            {
+                initialPoint = searchCenter + dir.Normalized() * (searchRadius * 0.9f);
+            }
+            else
+            {
+                initialPoint = searchCenter;
+            }
+        }
+        
+        // 确保初始点在场地内（如果设置了场地边界）
+        if (arenaBounds != null && !arenaBounds.Contains(initialPoint))
+        {
+            initialPoint = searchCenter;
+        }
+        
         candidates.Add(initialPoint);
         activeList.Add(initialPoint);
         var gridX = (int)((initialPoint.X - (searchCenter.X - searchRadius)) / gridSize);
@@ -238,41 +269,12 @@ public sealed class SafePositionQuery
         return safePoints;
     }
 
-    // 评分
-    private List<(WPos Point, float Score)> ScorePoints(List<WPos> points)
+    // 选择前N个点（考虑角度约束）
+    private List<WPos> SelectBestPoints(List<WPos> sortedPoints)
     {
-        var scored = new List<(WPos, float)>();
-
-        foreach (var point in points)
-        {
-            var score = 0f;
-
-            // 安全距离评分（距离危险越远越好）
-            var safetyDistance = calculator.DistanceToNearestDanger(point, currentTime);
-            score += safetyDistance * 10f;
-
-            // 目标点距离评分（距离目标越近越好）
-            if (targetPosition.HasValue)
-            {
-                var distanceToTarget = (point - targetPosition.Value).Length();
-                score -= distanceToTarget * 5f;
-            }
-
-            scored.Add((point, score));
-        }
-
-        return scored;
-    }
-
-    // 选择最优的N个点
-    private List<WPos> SelectBestPoints(List<(WPos Point, float Score)> scoredPoints)
-    {
-        // 按评分排序
-        scoredPoints.Sort((a, b) => b.Score.CompareTo(a.Score));
-
         var selected = new List<WPos>();
 
-        foreach (var (point, _) in scoredPoints)
+        foreach (var point in sortedPoints)
         {
             if (selected.Count >= count)
                 break;

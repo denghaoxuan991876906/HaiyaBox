@@ -44,6 +44,20 @@ public sealed class DisplayObjectLine : DisplayObject
     }
 }
 
+public sealed class DisplayObjectPolygon : DisplayObject
+{
+    public Vector3[] Vertices { get; }
+    public uint Color { get; }
+    public float Thickness { get; }
+
+    public DisplayObjectPolygon(Vector3[] vertices, uint color, float thickness)
+    {
+        Vertices = vertices;
+        Color = color;
+        Thickness = thickness;
+    }
+}
+
 public sealed class DisplayObjectDot : DisplayObject
 {
     public Vector3 Position { get; }
@@ -127,7 +141,7 @@ public static class DangerAreaDisplayBuilder
                     result.Add(new DisplayObjectCircle(center, (float)circle.Radius, config.CircleColor, config.OutlineThickness, false));
                     break;
                 case RectangleDangerArea rectangle:
-                    result.AddRange(BuildRectangle(rectangle, config, height));
+                    result.Add(BuildRectangle(rectangle, config, height));
                     break;
             }
         }
@@ -155,23 +169,19 @@ public static class DangerAreaDisplayBuilder
         return result;
     }
 
-    private static IEnumerable<DisplayObjectLine> BuildRectangle(RectangleDangerArea rectangle, DangerAreaRenderConfig config, float height)
+    private static DisplayObjectPolygon BuildRectangle(RectangleDangerArea rectangle, DangerAreaRenderConfig config, float height)
     {
-        // 矩形中心点
         var center = Point.ToVector3(rectangle.Center);
         center.Y = height;
 
-        // 计算半宽和半高
         var halfWidth = (float)(rectangle.Width / 2.0);
         var halfHeight = (float)(rectangle.Height / 2.0);
 
-        // 计算4个角点（未旋转状态，相对于中心）
-        var a = new Vector3(center.X - halfWidth, height, center.Z - halfHeight); // 左下
-        var b = new Vector3(center.X + halfWidth, height, center.Z - halfHeight); // 右下
-        var c = new Vector3(center.X + halfWidth, height, center.Z + halfHeight); // 右上
-        var d = new Vector3(center.X - halfWidth, height, center.Z + halfHeight); // 左上
+        var a = new Vector3(center.X - halfWidth, height, center.Z - halfHeight);
+        var b = new Vector3(center.X + halfWidth, height, center.Z - halfHeight);
+        var c = new Vector3(center.X + halfWidth, height, center.Z + halfHeight);
+        var d = new Vector3(center.X - halfWidth, height, center.Z + halfHeight);
 
-        // 如果有旋转角度，则应用旋转变换
         if (Math.Abs(rectangle.Rotation) > 0.001)
         {
             a = GeometryUtilsXZ.RotateAroundPoint(a, center, (float)rectangle.Rotation);
@@ -180,11 +190,7 @@ public static class DangerAreaDisplayBuilder
             d = GeometryUtilsXZ.RotateAroundPoint(d, center, (float)rectangle.Rotation);
         }
 
-        // 创建4条边线
-        yield return new DisplayObjectLine(a, b, config.RectangleColor, config.OutlineThickness);
-        yield return new DisplayObjectLine(b, c, config.RectangleColor, config.OutlineThickness);
-        yield return new DisplayObjectLine(c, d, config.RectangleColor, config.OutlineThickness);
-        yield return new DisplayObjectLine(d, a, config.RectangleColor, config.OutlineThickness);
+        return new DisplayObjectPolygon([a, b, c, d], config.RectangleColor, config.OutlineThickness);
     }
 
     private static Vector3 CreateWorldPosition(double x, double z, float height) => new((float)x, height, (float)z);

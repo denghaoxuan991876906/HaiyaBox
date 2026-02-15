@@ -12,7 +12,7 @@ public readonly record struct SafeZoneDrawStats(int ArenaCount, int ActiveZoneCo
 
 public static class SafeZoneAutoDraw
 {
-    private const float DefaultGridStep = 1.0f;
+    private const float DefaultGridStep = 0.25f;
     private const float DefaultFallbackRadius = 40f;
     private const float OutlineThickness = 2f;
     private const float SafePointRadius = 6f;

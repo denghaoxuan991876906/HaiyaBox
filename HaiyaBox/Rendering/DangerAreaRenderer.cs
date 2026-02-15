@@ -153,6 +153,9 @@ public sealed class DangerAreaRenderer : IDisposable
             case DisplayObjectLine line:
                 DrawLine(drawList, line);
                 break;
+            case DisplayObjectPolygon polygon:
+                DrawPolygon(drawList, polygon);
+                break;
             case DisplayObjectDot dot:
                 DrawDot(drawList, dot);
                 break;
@@ -166,6 +169,36 @@ public sealed class DangerAreaRenderer : IDisposable
     {
         if(!TryProject(line.Start, out var start) || !TryProject(line.End, out var end)) return;
         drawList.AddLine(start, end, line.Color, line.Thickness);
+    }
+
+    private static void DrawPolygon(ImDrawListPtr drawList, DisplayObjectPolygon polygon)
+    {
+        var vertices = polygon.Vertices;
+        if(vertices == null || vertices.Length < 3) return;
+
+        var screenVertices = new List<Vector2>();
+        foreach(var v in vertices)
+        {
+            if(TryProject(v, out var screen))
+            {
+                screenVertices.Add(screen);
+            }
+        }
+
+        if(screenVertices.Count < 3) return;
+
+        drawList.PathClear();
+        foreach(var v in screenVertices)
+        {
+            drawList.PathLineTo(v);
+        }
+        drawList.PathStroke(polygon.Color, ImDrawFlags.Closed, polygon.Thickness);
+
+        var dotRadius = polygon.Thickness / 2f + 0.5f;
+        foreach(var v in screenVertices)
+        {
+            drawList.AddCircleFilled(v, dotRadius, polygon.Color, 16);
+        }
     }
 
     private static void DrawDot(ImDrawListPtr drawList, DisplayObjectDot dot)

@@ -147,9 +147,9 @@ namespace HaiyaBox.UI
                 }
 
                 bool debugPointEnabled = DangerAreaTab.DebugPointEnabled;
-                if (ImGui.Checkbox("绘制Debug点", ref enabled))
+                if (ImGui.Checkbox("绘制Debug点", ref debugPointEnabled))
                 {
-                    DangerAreaTab.ToggleDebugPointStatic(enabled);
+                    DangerAreaTab.ToggleDebugPointStatic(debugPointEnabled);
                 }
                 
                 ImGui.SameLine();
