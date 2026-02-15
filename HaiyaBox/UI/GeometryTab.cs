@@ -141,11 +141,17 @@ namespace HaiyaBox.UI
             if (ImGui.CollapsingHeader("DebugPoint可视化", ImGuiTreeNodeFlags.DefaultOpen))
             {
                 bool enabled = DangerAreaTab.OverlayEnabled;
-                if (ImGui.Checkbox("绘制Debug点", ref enabled))
+                if (ImGui.Checkbox("绘制图形", ref enabled))
                 {
                     DangerAreaTab.ToggleOverlayStatic(enabled);
                 }
 
+                bool debugPointEnabled = DangerAreaTab.DebugPointEnabled;
+                if (ImGui.Checkbox("绘制Debug点", ref enabled))
+                {
+                    DangerAreaTab.ToggleDebugPointStatic(enabled);
+                }
+                
                 ImGui.SameLine();
 
 

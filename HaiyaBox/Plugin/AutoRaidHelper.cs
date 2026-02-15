@@ -21,9 +21,7 @@ namespace HaiyaBox.Plugin
     {
         private readonly GeometryTab _geometryTab = new();
         private readonly AutomationTab _automationTab = new();
-        private readonly FaGeneralSettingTab _faGeneralSettingTab = new();
         private readonly EventRecordTab _eventRecordTab = new();
-        private readonly BlackListTab _blackListTab = new();
         private readonly DangerAreaTab _dangerAreaTab = new();
         private readonly TreasureOpenerService _treasureOpener = TreasureOpenerService.Instance;
         private ActorControlHook? actorControlHook;
@@ -91,7 +89,6 @@ namespace HaiyaBox.Plugin
         {
             _geometryTab.Update();
             _automationTab.Update();
-            _blackListTab.Update();
             _dangerAreaTab.Update();
             SafeZoneAutoDraw.Update();
             _treasureOpener.Update();
@@ -113,22 +110,11 @@ namespace HaiyaBox.Plugin
                     _automationTab.Draw();
                     ImGui.EndTabItem();
                 }
-
-
-                if (ImGui.BeginTabItem("FA全局设置"))
-                {
-                    _faGeneralSettingTab.Draw();
-                    ImGui.EndTabItem();
-                }
+                
 
                 if (ImGui.BeginTabItem("事件记录"))
                 {
                     _eventRecordTab.Draw();
-                    ImGui.EndTabItem();
-                }
-                if (ImGui.BeginTabItem("黑名单管理"))
-                {
-                    _blackListTab.Draw();
                     ImGui.EndTabItem();
                 }
 

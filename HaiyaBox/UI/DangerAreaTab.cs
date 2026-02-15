@@ -127,6 +127,7 @@ namespace HaiyaBox.UI
         private static DangerAreaTab? _instance;
 
         public static bool OverlayEnabled;
+        public static bool DebugPointEnabled;
 
         /// <summary>
         /// 获取 DangerAreaRenderer 实例，供外部模块使用。
@@ -145,6 +146,12 @@ namespace HaiyaBox.UI
         {
             if (_instance == null) return;
             _instance.ToggleOverlay(enabled);
+        }
+
+        public static void ToggleDebugPointStatic(bool enabled)
+        {
+            if (_instance == null) return;
+            _instance.ToggleDebug(enabled);
         }
 
         public void Update()
@@ -839,6 +846,12 @@ namespace HaiyaBox.UI
                 MarkOverlayDirty();
                 SyncOverlayIfNeeded();
             }
+        }
+
+        private void ToggleDebug(bool enabled)
+        {
+            if (DebugPointEnabled == enabled) return;
+            DebugPointEnabled = enabled;
         }
 
         private void MarkOverlayDirty()

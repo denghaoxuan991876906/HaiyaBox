@@ -4,6 +4,7 @@ using System.Numerics;
 using Dalamud.Bindings.ImGui;
 using HaiyaBox.Rendering;
 using HaiyaBox.Settings;
+using HaiyaBox.UI;
 
 namespace HaiyaBox.Utils;
 
@@ -48,7 +49,7 @@ public static class DebugPoint
     {
         var result = new List<DisplayObject>();
 
-        if (!FullAutoSettings.Instance.FaGeneralSetting.PrintDebugInfo)
+        if (!DangerAreaTab.DebugPointEnabled)
         {
             return result;
         }
