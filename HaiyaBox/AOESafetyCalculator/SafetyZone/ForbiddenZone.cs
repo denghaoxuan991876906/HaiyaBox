@@ -14,6 +14,11 @@ namespace AOESafetyCalculator.SafetyZone;
 public sealed record class ForbiddenZone
 {
     /// <summary>
+    /// 禁止区域名称（用于唯一标识和按名清除）
+    /// </summary>
+    public string Name { get; init; } = string.Empty;
+
+    /// <summary>
     /// 禁止区域的形状距离场
     /// </summary>
     /// <remarks>

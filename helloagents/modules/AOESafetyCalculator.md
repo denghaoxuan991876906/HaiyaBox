@@ -25,7 +25,7 @@
 |----|------|
 | SafeZoneCalculator | 安全性判定与安全点查询 |
 | SafePositionQuery | 链式约束查询 |
-| ForbiddenZone | 禁止区域定义 |
+| ForbiddenZone | 禁止区域定义（支持 Name 以便按名清除） |
 | ArenaBounds | 场地边界（圆形/矩形） |
 | SafeZoneDrawRegistry | SafeZone 绘制注册表与安全点通知 |
 
@@ -63,6 +63,13 @@
   1. 注册计算器实例
   2. 上报安全点结果
 **结果**: 渲染层可读取距离场数据并自动绘制
+
+### 禁止区域按名清除
+**条件**: 调用 `SafeZoneCalculator.ClearForbiddenZoneByName(name)`
+**行为**:
+  1. 按名称查找禁止区域（通常唯一）
+  2. 清除命中区域并刷新绘制缓存
+**结果**: 返回是否清除成功
 
 ## 依赖关系
 

@@ -68,6 +68,30 @@ public sealed class SafeZoneCalculator
     }
 
     /// <summary>
+    /// 按名称清除一个禁止区域（通常 name 唯一）
+    /// </summary>
+    /// <param name="name">禁止区域名称</param>
+    /// <returns>true 表示已清除，false 表示未找到</returns>
+    public bool ClearForbiddenZoneByName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Zone name must be provided", nameof(name));
+
+        for (var i = zones.Count - 1; i >= 0; i--)
+        {
+            if (zones[i].Name == name)
+            {
+                zones.RemoveAt(i);
+                SafeZoneDrawRegistry.ClearCalculator(this);
+                SafeZoneDrawRegistry.Touch(this);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// 检查指定位置是否安全
     /// </summary>
     /// <param name="position">要检查的位置</param>

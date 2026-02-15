@@ -28,6 +28,7 @@ namespace HaiyaBox.Plugin
         private readonly TreasureOpenerService _treasureOpener = TreasureOpenerService.Instance;
         private ActorControlHook? actorControlHook;
         private XSZToolboxIpc? _xszToolboxIpc;
+        private readonly MoveManage _moveManage = new();
 
         public PluginSetting BuildPlugin()
         {
@@ -54,13 +55,12 @@ namespace HaiyaBox.Plugin
         {
             _automationTab.OnLoad(loadContext);
             _eventRecordTab.OnLoad(loadContext);
+            _moveManage.TryInitialize();
             _xszToolboxIpc = new XSZToolboxIpc();
             XszRemote.Instance = _xszToolboxIpc;
             DebugPoint.Initialize(_dangerAreaTab.Renderer);
             AOEShapeDebug.Initialize(_dangerAreaTab.Renderer);
             SafeZoneAutoDraw.Initialize(_dangerAreaTab.Renderer);
-
-
             ResetAutoSettings();
         }
 
@@ -76,6 +76,7 @@ namespace HaiyaBox.Plugin
             _automationTab.Dispose();
             _eventRecordTab.Dispose();
             _dangerAreaTab.Dispose();
+            _moveManage.Dispose();
             DebugPoint.Dispose();
             AOEShapeDebug.Dispose();
             SafeZoneAutoDraw.Dispose();
@@ -94,6 +95,7 @@ namespace HaiyaBox.Plugin
             _dangerAreaTab.Update();
             SafeZoneAutoDraw.Update();
             _treasureOpener.Update();
+            _moveManage.Update();
         }
 
         public void OnPluginUI()

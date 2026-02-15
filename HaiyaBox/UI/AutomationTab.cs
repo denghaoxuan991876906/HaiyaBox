@@ -12,6 +12,7 @@ using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Game.Command;
 using Dalamud.Game.Text;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
@@ -192,6 +193,7 @@ namespace HaiyaBox.UI
         private readonly object _enterOccultLock = new();
         private readonly object _switchNotMaxSupJobLock = new();
 
+        private const string CommandName = "/remotetp";
         /// <summary>
         /// 在加载时，订阅副本状态相关事件（如副本完成和团灭）
         /// 以便更新自动化状态或低保统计数据。
@@ -201,8 +203,12 @@ namespace HaiyaBox.UI
         {
             Svc.DutyState.DutyCompleted += OnDutyCompleted;
             Svc.DutyState.DutyWiped += OnDutyWiped;
+            Svc.Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
+            {
+                HelpMessage = "遥控TP"
+            });
         }
-
+        
         /// <summary>
         /// 在插件卸载时取消对副本状态事件的订阅，
         /// 防止因事件残留引起内存泄漏或异常提交。
@@ -211,8 +217,20 @@ namespace HaiyaBox.UI
         {
             Svc.DutyState.DutyCompleted -= OnDutyCompleted;
             Svc.DutyState.DutyWiped -= OnDutyWiped;
+            Svc.Commands.RemoveHandler(CommandName);
         }
 
+        private void OnCommand(string command, string args)
+        {
+            if (string.IsNullOrWhiteSpace(args))
+            {
+                return;
+            }
+            var mousePos = ImGui.GetMousePos();
+            Svc.GameGui.ScreenToWorld(mousePos, out var worldPos);
+            
+            XszRemote.SetPos(args, worldPos);
+        }
         /// <summary>
         /// 每帧调用 Update 方法，依次执行倒计时、退本与排本更新逻辑，
         /// 同时重置副本完成状态标志。

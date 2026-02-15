@@ -18,6 +18,16 @@
 - **[Tests]**: DistanceFieldContourBuilder 单元测试
   - 方案: [202602061852_auto-draw-distancefield](archive/2026-02/202602061852_auto-draw-distancefield/)
 
+- **[AOESafetyCalculator]**: ForbiddenZone 增加 Name 并支持按名清除单个禁止区域
+  - 类型: 微调（无方案包）
+  - 文件: HaiyaBox/AOESafetyCalculator/SafetyZone/ForbiddenZone.cs
+  - 文件: HaiyaBox/AOESafetyCalculator/SafetyZone/SafeZoneCalculator.cs
+
+- **[Tests]**: 新增 SafeZoneCalculator 按名清除禁止区域测试
+  - 类型: 微调（无方案包）
+  - 文件: tests/HaiyaBox.Tests/HaiyaBox.Tests.csproj
+  - 文件: tests/HaiyaBox.Tests/SafetyZone/ForbiddenZoneNameTests.cs
+
 ## [0.4.5] - 2026-02-05
 
 ### 微调

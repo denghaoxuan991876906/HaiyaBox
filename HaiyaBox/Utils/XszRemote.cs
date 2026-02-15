@@ -260,4 +260,26 @@ public class XszRemote
     {
         return Instance?.GetOnlineMemberCount() ?? 0;
     }
+
+    /// <summary>
+    /// 滑动移动延迟指定角色到目标位置
+    /// </summary>
+    /// <param name="role">角色名称</param>
+    /// <param name="pos">目标位置</param>
+    /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
+    public static void SlideMoveDelay(string role, Vector3 pos, long battleTimeMs)
+    {
+        Instance?.SlideMoveDelay(role, pos, battleTimeMs);
+    }
+
+    /// <summary>
+    /// 滑动移动超时指定角色到目标位置
+    /// </summary>
+    /// <param name="role">角色名称</param>
+    /// <param name="pos">目标位置</param>
+    /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
+    public static void SlideMoveTimeout(string role, Vector3 pos, long battleTimeMs)
+    {
+        Instance?.SlideMoveTimeout(role, pos, battleTimeMs);
+    }
 }

@@ -134,9 +134,19 @@ namespace HaiyaBox.Plugin;
         private ICallGateSubscriber<int> _getMemberCountSubscriber;
 
         /// <summary>
-        /// 获取在线成员数量订阅者
-        /// </summary>
-        private ICallGateSubscriber<int> _getOnlineMemberCountSubscriber;
+    /// 获取在线成员数量订阅者
+    /// </summary>
+    private ICallGateSubscriber<int> _getOnlineMemberCountSubscriber;
+
+    /// <summary>
+    /// 滑动移动延迟订阅者
+    /// </summary>
+    private ICallGateSubscriber<string, Vector3, long, object> _slideMoveDelaySubscriber;
+
+    /// <summary>
+    /// 滑动移动超时订阅者
+    /// </summary>
+    private ICallGateSubscriber<string, Vector3, long, object> _slideMoveTimeoutSubscriber;
 
         /// <summary>
         /// 构造函数
@@ -176,6 +186,8 @@ namespace HaiyaBox.Plugin;
             _getRoleByPlayerCidSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, string?>("XSZToolbox.RemoteControl.GetRoleByPlayerCID");
             _getMemberCountSubscriber = Svc.PluginInterface.GetIpcSubscriber<int>("XSZToolbox.RemoteControl.GetMemberCount");
             _getOnlineMemberCountSubscriber = Svc.PluginInterface.GetIpcSubscriber<int>("XSZToolbox.RemoteControl.GetOnlineMemberCount");
+            _slideMoveDelaySubscriber = Svc.PluginInterface.GetIpcSubscriber<string, Vector3, long, object>("XSZToolbox.RemoteControl.SlideMoveDelay");
+            _slideMoveTimeoutSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, Vector3, long, object>("XSZToolbox.RemoteControl.SlideMoveTimeout");
         }
 
     /// <summary>
@@ -440,6 +452,28 @@ namespace HaiyaBox.Plugin;
     public int GetOnlineMemberCount()
     {
         return _getOnlineMemberCountSubscriber?.InvokeFunc() ?? 0;
+    }
+
+    /// <summary>
+    /// 滑动移动延迟指定角色到目标位置
+    /// </summary>
+    /// <param name="role">角色名称</param>
+    /// <param name="pos">目标位置</param>
+    /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
+    public void SlideMoveDelay(string role, Vector3 pos, long battleTimeMs)
+    {
+        _slideMoveDelaySubscriber?.InvokeAction(role, pos, battleTimeMs);
+    }
+
+    /// <summary>
+    /// 滑动移动超时指定角色到目标位置
+    /// </summary>
+    /// <param name="role">角色名称</param>
+    /// <param name="pos">目标位置</param>
+    /// <param name="battleTimeMs">目标战斗时间(毫秒)</param>
+    public void SlideMoveTimeout(string role, Vector3 pos, long battleTimeMs)
+    {
+        _slideMoveTimeoutSubscriber?.InvokeAction(role, pos, battleTimeMs);
     }
 
     /// <summary>
