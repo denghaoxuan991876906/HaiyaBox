@@ -403,20 +403,40 @@ public sealed class SafeZoneCalculator
     /// calculator.AddAOEShape(new AOEShapeCircle(8f, invertForbiddenZone: true), safePos);
     /// </code>
     /// </example>
-    public SafeZoneCalculator AddAOEShape(AOEShape shape, WPos origin, DateTime? activation = null)
+    public SafeZoneCalculator AddAOEShape(AOEShape shape, WPos origin, string name = "",DateTime? activation = null)
     {
         var distance = shape.InvertForbiddenZone
             ? shape.InvertedDistance(origin)
             : shape.Distance(origin);
-        
+        var zoneName = string.IsNullOrEmpty(name) ? GenerateShortUniqueId() : name;
         AddForbiddenZone(new ForbiddenZone
         {
             Shape = distance,
-            Activation = activation ?? DateTime.Now
+            Activation = activation ?? DateTime.Now,
+            Name = zoneName
         });
         return this;
     }
+    // 静态自增数，保证同一进程内的唯一性
+    private static int _sequence = 0;
 
+    /// <summary>
+    /// 生成短唯一ID（时间戳+随机数+自增数）
+    /// </summary>
+    /// <returns>16位左右的唯一字符串</returns>
+    public static string GenerateShortUniqueId()
+    {
+        // 1. 获取时间戳（毫秒级，保证时间维度唯一）
+        long timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        // 2. 生成随机数（3位）
+        Random random = new Random();
+        int randomNum = random.Next(100, 999);
+        // 3. 自增数（避免同一毫秒内重复）
+        int seq = Interlocked.Increment(ref _sequence) % 1000; // 取模防止溢出
+
+        // 拼接并返回（可根据需要调整格式）
+        return $"{timestamp}{randomNum}{seq:D3}";
+    }
     #endregion
 
     #region 原有方法
