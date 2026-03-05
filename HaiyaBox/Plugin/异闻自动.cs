@@ -71,6 +71,14 @@ public class 异闻自动
         {
             无敌挂机 = 无敌;
         }
+        
+        ImGui.Text("DEBUG");
+        
+        ImGui.Text($"进度:{进度}");
+        ImGui.Text($"战斗时间:{AI.Instance.BattleData.CurrBattleTimeInMs}");
+        ImGui.Text($"老一可选中:{TargetMgr.Instance.EnemysIn20.Values.Any(e => e.BaseId == 19097 && e.IsTargetable)}");
+        ImGui.Text($"老二可选中:{TargetMgr.Instance.EnemysIn20.Values.Any(e => e.BaseId == 19226 && e.IsTargetable)}");
+        ImGui.Text($"老三可选中:{TargetMgr.Instance.EnemysIn20.Values.Any(e => e.BaseId == 19056 && e.IsTargetable)}");
     }
     public void Update()
     {
@@ -119,6 +127,8 @@ public class 异闻自动
             进度 = 新进度;
             无敌已开启 = false;
             传送指令已发送 = false;
+            老一换位f = false;
+            老二换位f = false;
         }
         
         if (无敌挂机 )
@@ -158,7 +168,7 @@ public class 异闻自动
                     return;
                 if (目标.DistanceToPlayer() > 6)
                 {
-                    if ((DateTime.Now - 跟随时间).TotalMilliseconds < 0.5)
+                    if ((DateTime.Now - 跟随时间).TotalMilliseconds < 500)
                         return;
                     跟随时间 = DateTime.Now;
                     var 坐标 = GeometryUtilsXZ.ExtendPoint(老三, 目标.Position, 5);
