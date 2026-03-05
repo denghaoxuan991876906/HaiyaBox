@@ -30,10 +30,10 @@ public class 四运玩家
 {
     public int 方位;
     public 类型 玩家分身类型 = new();
-    public Vector3 机制处理位置 = new Vector3(100, 0, 100);
     public int 轮次 = 0;
     public string 玩家Name;
     public uint 玩家Id;
+    public Vector3 机制处理位置 = new Vector3(100, 0, 100);
 
     public void Update(TetherCondParams tetherCondParams)
     {
@@ -75,6 +75,8 @@ public class 四运玩家
         }
     }
 }
+
+
 public class 四运Boss分身
 {
     public uint 分身Id;

@@ -59,6 +59,7 @@ namespace HaiyaBox.Plugin
             DebugPoint.Initialize(_dangerAreaTab.Renderer);
             AOEShapeDebug.Initialize(_dangerAreaTab.Renderer);
             SafeZoneAutoDraw.Initialize(_dangerAreaTab.Renderer);
+            异闻自动.Instance.OnLoad(loadContext);
             ResetAutoSettings();
         }
 
@@ -78,6 +79,7 @@ namespace HaiyaBox.Plugin
             DebugPoint.Dispose();
             AOEShapeDebug.Dispose();
             SafeZoneAutoDraw.Dispose();
+            异闻自动.Instance.Dispose();
 
             
             actorControlHook?.Dispose();
@@ -87,6 +89,7 @@ namespace HaiyaBox.Plugin
 
         public void Update()
         {
+            异闻自动.Instance.Update();
             _geometryTab.Update();
             _automationTab.Update();
             _dangerAreaTab.Update();
@@ -111,6 +114,11 @@ namespace HaiyaBox.Plugin
                     ImGui.EndTabItem();
                 }
                 
+                if (ImGui.BeginTabItem("异闻自动"))
+                {
+                    异闻自动.Instance.Draw();
+                    ImGui.EndTabItem();
+                }
 
                 if (ImGui.BeginTabItem("事件记录"))
                 {
