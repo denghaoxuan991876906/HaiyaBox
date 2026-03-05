@@ -1,4 +1,4 @@
-﻿using System.Numerics;
+using System.Numerics;
 using System.Runtime.Loader;
 using AEAssist;
 using AEAssist.CombatRoutine.Module;
@@ -31,6 +31,8 @@ public class 异闻自动
     private bool 老一换位f = false;
     private bool 老二换位f = false;
     private bool 副本结束tp = false;
+    private DateTime 流程结束时间 = DateTime.Now;
+    private bool 结束指令已发送 = false;
     
     private DateTime 跟随时间 = DateTime.Now;
     private bool 开始头标 = false;
@@ -86,7 +88,7 @@ public class 异闻自动
         ImGui.Text("DEBUG");
         
         ImGui.Text($"进度:{进度}");
-        ImGui.Text($"战斗时间:{(int)(DateTime.Now - 战斗开始时间).TotalMilliseconds}");
+        ImGui.Text($"战斗时间:{(int)(DateTime.Now - 战斗开始时间).TotalSeconds}");
         ImGui.Text($"老一可选中:{TargetMgr.Instance.EnemysIn20.Values.Any(e => e.BaseId == 19097 && e.IsTargetable)}");
         ImGui.Text($"老二可选中:{TargetMgr.Instance.EnemysIn20.Values.Any(e => e.BaseId == 19226 && e.IsTargetable)}");
         ImGui.Text($"老三可选中:{TargetMgr.Instance.EnemysIn20.Values.Any(e => e.BaseId == 19056 && e.IsTargetable)}");
@@ -116,12 +118,22 @@ public class 异闻自动
             正在等待进入 = false;
         }
 
-        if (流程结束 && !副本结束tp)
+        if (流程结束 )
         {
-            Core.Me.SetPos(new Vector3(-760.0f, -54.0f, -811.3f));
+            if (!副本结束tp)
+            {
+                流程结束时间 = DateTime.Now;
+                Core.Me.SetPos(new Vector3(-760.0f, -54.0f, -811.3f));
+                副本结束tp = true;
+            }
             事件启动 = false;
             开始头标 = false;
-            副本结束tp = true;
+            
+            if (!结束指令已发送 && (DateTime.Now - 流程结束时间).TotalSeconds >= 5)
+            {
+                结束指令已发送 = true;
+                ChatHelper.SendMessage("/xsz-leaveduty");
+            }
             return;
         }
 
@@ -236,13 +248,7 @@ public class 异闻自动
                     Core.Me.SetPos(坐标);
                 }
             }
-
-            if (!开始头标 && 战斗时间ms > 45 * 1000)
-            {
-                事件启动 = true;
-                开始头标 = true;
-                Core.Me.SetPos(new Vector3(374.3f, -29.6f, 558.9f));
-            }
+            
         }
     }
 
@@ -251,10 +257,10 @@ public class 异闻自动
         if (进度 >= 3 && !敌人可选中(敌人ID列表[2]))
         {
             流程结束 = true;
-            ChatHelper.SendMessage("/xsz-invuln off");
-            if (!Core.Me.IsTargetable && 无敌挂机 && !无敌已关闭_战斗结束)
+            
+            if (!Core.Me.IsTargetable)
             {
-                无敌已关闭_战斗结束 = true;
+                ChatHelper.SendMessage("/xsz-invuln off");
             }
             return;
         }
@@ -365,6 +371,7 @@ public class 异闻自动
         老一换位f = false;
         老二换位f = false;
         副本结束tp = false;
+        结束指令已发送 = false;
         开始头标 = false;
         事件启动 = false;
         无敌已开启 = false;
