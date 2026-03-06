@@ -36,6 +36,7 @@ public class 异闻自动
     private bool 结束指令已发送 = false;
     
     private DateTime 跟随时间 = DateTime.Now;
+    private bool 是否遥控位 = false;
     private bool 开始头标 = false;
     private bool 事件启动 = false;
     private bool 无敌已开启 = false;
@@ -83,6 +84,7 @@ public class 异闻自动
     {
         ImGui.Text("异闻自动设置");
         ImGui.Checkbox("启动功能", ref 功能启动);
+        ImGui.Checkbox("遥控位", ref 是否遥控位);
         var 无敌 = 无敌挂机;
         if (ImGui.Checkbox("无敌人", ref 无敌))
         {
@@ -128,16 +130,19 @@ public class 异闻自动
             {
                 流程结束时间 = DateTime.Now;
                 ChatHelper.SendMessage("/xsz-invuln off");
-                Core.Me.SetPos(new Vector3(-760.0f, -54.0f, -811.3f));
-                副本结束tp = true;
+                if (是否遥控位)
+                {
+                    XszRemote.SetPos("", new Vector3(-760.0f, -54.0f, -811.3f));
+                    副本结束tp = true;
+                }
             }
             事件启动 = false;
             开始头标 = false;
             
-            if (!结束指令已发送 && (DateTime.Now - 流程结束时间).TotalSeconds >= 5)
+            if (!结束指令已发送 && (DateTime.Now - 流程结束时间).TotalSeconds >= 5 && 是否遥控位)
             {
                 结束指令已发送 = true;
-                ChatHelper.SendMessage("/xsz-leaveduty");
+                XszRemote.Cmd("","/xsz-leaveduty");
             }
             return;
         }
@@ -215,43 +220,43 @@ public class 异闻自动
             return;
         }
         
-        if (进度 == 1)
+        if (进度 == 1 && 是否遥控位)
         {
             if (战斗时间ms > 195 * 1000 && !老一换位f)
             {
                 老一换位f = true;
-                ChatHelper.SendMessage($"/xsz-respawn set 370.3 -29.5 530.4");
+                XszRemote.Cmd("",$"/xsz-respawn set 370.3 -29.5 530.4");
             }
 
             if (!复活位置指令)
             {
                 复活位置指令 = true;
-                ChatHelper.SendMessage($"/xsz-respawn set 375.3 -29.5 534.9");
+                XszRemote.Cmd("",$"/xsz-respawn set 375.3 -29.5 534.9");
             }
         }
 
-        if (进度 == 2)
+        if (进度 == 2 &&是否遥控位)
         {
             if (战斗时间ms > 160 * 1000 && !老二换位f)
             {
                 老二换位f = true;
-                ChatHelper.SendMessage($"/xsz-respawn set 170.1 -16.0 -809.7");
+                XszRemote.Cmd("",$"/xsz-respawn set 170.1 -16.0 -809.7");
             }
             if (!复活位置指令)
             {
                 复活位置指令 = true;
-                ChatHelper.SendMessage($"/xsz-respawn set 170.1 -16.0 -818.7");
+                XszRemote.Cmd("",$"/xsz-respawn set 170.1 -16.0 -818.7");
             }
         }
 
         if (进度 == 3)
         {
-            if (!复活位置指令)
+            if (!复活位置指令 && 是否遥控位)
             {
                 复活位置指令 = true;
-                ChatHelper.SendMessage($"/xsz-respawn set -759 -54 -803");
+                XszRemote.Cmd("",$"/xsz-respawn set -759 -54 -803");
             }
-            if (战斗时间ms < 45 * 1000)
+            if (战斗时间ms < 30 * 1000)
             {
                 var 自己 = Core.Me;
                 var 目标 = 自己.GetCurrTarget();
@@ -344,7 +349,10 @@ public class 异闻自动
         {
             传送指令已发送 = true;
             ChatHelper.SendMessage("/xsz-invuln off");
-            Core.Me.SetPos(目标位置);
+            if (是否遥控位)
+            {
+                XszRemote.SetPos("", 目标位置);
+            }
         }
     }
 
