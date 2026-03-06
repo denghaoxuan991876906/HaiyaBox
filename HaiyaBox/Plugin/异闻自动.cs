@@ -21,7 +21,7 @@ public class 异闻自动
     private Vector3 老二 = new Vector3(170.1f, -16.0f, -818.7f);
     private Vector3 老三 = new Vector3(-759, -54, -800);
 
-
+    private bool 功能启动 = false;
     private bool 无敌挂机 = false;
     private int 进度 = 0;
     private bool 流程结束 = false;
@@ -78,7 +78,7 @@ public class 异闻自动
     public void Draw()
     {
         ImGui.Text("异闻自动设置");
-
+        ImGui.Checkbox("启动功能", ref 功能启动);
         var 无敌 = 无敌挂机;
         if (ImGui.Checkbox("无敌人", ref 无敌))
         {
