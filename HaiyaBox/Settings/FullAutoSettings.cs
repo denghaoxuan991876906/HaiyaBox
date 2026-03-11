@@ -605,7 +605,7 @@ namespace HaiyaBox.Settings
         // 副本预设
         public static readonly List<DutyInfo> DutyPresets =
         [
-            new ("异闻商客奇谈", DutyCategory.Variant),
+            new ("异闻商客奇谭", DutyCategory.Variant),
             // 绝本
             /*new("巴哈姆特绝境战", DutyCategory.Ultimate),
             new("究极神兵绝境战", DutyCategory.Ultimate),
