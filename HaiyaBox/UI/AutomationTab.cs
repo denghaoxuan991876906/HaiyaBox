@@ -931,7 +931,7 @@ namespace HaiyaBox.UI
                 if (Core.Resolve<MemApiDuty>().IsBoundByDuty())
                     return;
                 // 解限时不考虑人数
-                if (InfoProxyCrossRealm.GetPartyMemberCount() < 8 && !Settings.UnrestEnabled)
+                if (InfoProxyCrossRealm.GetPartyMemberCount() < 4 && !Settings.UnrestEnabled)
                     return;
 
                 // 检查跨服队伍中是否所有成员均在线且未在副本中，否则退出

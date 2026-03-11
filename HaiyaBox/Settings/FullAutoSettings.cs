@@ -605,23 +605,24 @@ namespace HaiyaBox.Settings
         // 副本预设
         public static readonly List<DutyInfo> DutyPresets =
         [
+            new ("异闻商客奇谈", DutyCategory.Variant),
             // 绝本
-            new("巴哈姆特绝境战", DutyCategory.Ultimate),
+            /*new("巴哈姆特绝境战", DutyCategory.Ultimate),
             new("究极神兵绝境战", DutyCategory.Ultimate),
             new("亚历山大绝境战", DutyCategory.Ultimate),
             new("幻想龙诗绝境战", DutyCategory.Ultimate),
             new("欧米茄绝境验证战", DutyCategory.Ultimate),
-            new("光暗未来绝境战", DutyCategory.Ultimate),
+            new("光暗未来绝境战", DutyCategory.Ultimate),*/
             // 极神
-            new("佐迪亚克暝暗歼灭战", DutyCategory.Extreme),
+            /*new("佐迪亚克暝暗歼灭战", DutyCategory.Extreme),
             new("艳翼蛇鸟歼殛战", DutyCategory.Extreme),
             new("佐拉加歼殛战", DutyCategory.Extreme),
             new("永恒女王忆想歼灭战", DutyCategory.Extreme),
-            new("泽莲尼娅歼殛战", DutyCategory.Extreme),
+            new("泽莲尼娅歼殛战", DutyCategory.Extreme),*/
             new("护锁刃龙上位狩猎战", DutyCategory.Extreme),
             // 异闻
-            new("异闻阿罗阿罗岛", DutyCategory.Variant),
-            new("零式异闻阿罗阿罗岛", DutyCategory.Variant),
+            /*new("异闻阿罗阿罗岛", DutyCategory.Variant),
+            new("零式异闻阿罗阿罗岛", DutyCategory.Variant),*/
             // 自定义
             new("自定义", DutyCategory.Custom)
         ];
