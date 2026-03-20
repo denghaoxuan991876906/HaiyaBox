@@ -61,6 +61,7 @@ namespace HaiyaBox.Plugin
             SafeZoneAutoDraw.Initialize(_dangerAreaTab.Renderer);
             异闻自动.Instance.OnLoad(loadContext);
             ResetAutoSettings();
+            AutoSelectAddonService.Instance.IsEnabled = FullAutoSettings.Instance.AutoSelectSettings.AutoSelectEnabled;
         }
 
         private void ResetAutoSettings()
@@ -80,6 +81,7 @@ namespace HaiyaBox.Plugin
             AOEShapeDebug.Dispose();
             SafeZoneAutoDraw.Dispose();
             异闻自动.Instance.Dispose();
+            AutoSelectAddonService.Instance.Dispose();
 
             
             actorControlHook?.Dispose();
@@ -96,6 +98,7 @@ namespace HaiyaBox.Plugin
             SafeZoneAutoDraw.Update();
             _treasureOpener.Update();
             _moveManage.Update();
+            AutoSelectAddonService.Instance.Update();
         }
 
         public void OnPluginUI()
@@ -129,6 +132,14 @@ namespace HaiyaBox.Plugin
                 if (ImGui.BeginTabItem("危险区域"))
                 {
                     _dangerAreaTab.Draw();
+                    ImGui.EndTabItem();
+                }
+                
+                if (ImGui.BeginTabItem("Addon调试"))
+                {
+                    AutoSelectAddonService.Instance.DrawDebugTab();
+                    ImGui.Separator();
+                    AutoSelectAddonService.Instance.DrawConfigTab();
                     ImGui.EndTabItem();
                 }
 

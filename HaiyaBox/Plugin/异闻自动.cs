@@ -77,6 +77,7 @@ public class 异闻自动
         TriggerlineData.OnCondParamsCreate -= OnCondParamsCreateEvent;
     }
 
+    private string _addonName = "VVDVoteRoute";
     /// <summary>
     /// 绘制事件记录Tab的UI界面
     /// </summary>
@@ -98,8 +99,26 @@ public class 异闻自动
         ImGui.Text($"老一可选中:{TargetMgr.Instance.EnemysIn20.Values.Any(e => e.BaseId == 19097 && e.IsTargetable)}");
         ImGui.Text($"老二可选中:{TargetMgr.Instance.EnemysIn20.Values.Any(e => e.BaseId == 19226 && e.IsTargetable)}");
         ImGui.Text($"老三可选中:{TargetMgr.Instance.EnemysIn20.Values.Any(e => e.BaseId == 19056 && e.IsTargetable)}");
+
+        var 路线选择ready = Core.Resolve<MemApiAddon>().IsAddonAndNodesReady(_addonName);
+        if (路线选择ready)
+        {
+            ImGui.Text("异变路线选择中：");
+            ImGui.Text($"GetNodeText{Core.Resolve<MemApiAddon>().GetAddonValue(_addonName, 31001).String}");
+        }
     }
+
+    private async Task AddonSetTask()
+    {
+        await Task.Delay(500);
+        Core.Resolve<MemApiAddon>().SetAddonClicked(_addonName, 1);
+        
+    } 
     public void Update()
+    {
+        商客异闻fa();
+    }
+    private void 商客异闻fa()
     {
         var 当前地图ID = Core.Resolve<MemApiMap>().GetCurrTerrId();
         
@@ -164,6 +183,18 @@ public class 异闻自动
 
         上一帧在战斗中 = false;
         执行非战斗流程();
+    }
+
+    private void 商客异变fa()
+    {
+        var 当前地图ID = Core.Resolve<MemApiMap>().GetCurrTerrId();
+        
+        if (当前地图ID != 1317)
+        {
+            上次地图ID = 当前地图ID;
+            return;
+        }
+        
     }
 
     private void 更新战斗中进度()
