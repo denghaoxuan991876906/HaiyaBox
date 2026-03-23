@@ -73,46 +73,15 @@ public class AddonDebugTab
         {
             var entries = new List<(int Index, string Text)>();
             var textBuilder = new StringBuilder();
-            
-            switch (addonName)
+            if (addonName == "VVDVoteRoute")
             {
-                case "SelectString":
-                case "SelectIconString":
-                    var popupMenu = (FFXIVClientStructs.FFXIV.Client.UI.PopupMenu*)atk;
-                    
-                    if (popupMenu != null)
-                    {
-                        var count = popupMenu->EntryCount;
-                        for (var i = 0; i < count; i++)
-                        {
-                            var textPtr = popupMenu->EntryNames[i].Value;
-                            var text = textPtr != null ? Marshal.PtrToStringUTF8((nint)textPtr) ?? "" : "";
-                            entries.Add((i, text));
-                            textBuilder.AppendLine($"[{i}] {text}");
-                        }
-                    }
-                    break;
-                    
-                case "VVDVoteRoute":
-                    entries = VVDVoteRouteHelper.GetEntries();
-                    foreach (var entry in entries)
-                    {
-                        textBuilder.AppendLine($"[{entry.Index}] {entry.Text}");
-                    }
-                    break;
-                    
-                case "SelectYesNo":
-                    var yesNoText = GetAddonTextNode(atk, 2);
-                    entries.Add((0, yesNoText));
-                    textBuilder.AppendLine(yesNoText);
-                    break;
-                    
-                case "Talk":
-                    var talkText = GetAddonTextNode(atk, 2);
-                    entries.Add((0, talkText));
-                    textBuilder.AppendLine(talkText);
-                    break;
+                entries = VVDVoteRouteHelper.GetEntries();
+                foreach (var entry in entries)
+                {
+                    textBuilder.AppendLine($"[{entry.Index}] {entry.Text}");
+                }
             }
+
             
             _addonEntries[addonName] = entries;
             _addonTexts[addonName] = textBuilder.ToString();
@@ -273,16 +242,6 @@ public class AddonDebugTab
             {
                 case "SelectString":
                 case "SelectIconString":
-                    var selectString = new ECommons.UIHelpers.AddonMasterImplementations.AddonMaster.SelectString(atk);
-                    if (index >= 0 && index < selectString.Entries.Length)
-                    {
-                        selectString.Entries[index].Select();
-                        LogHelper.Print($"已选择 {addonName} 索引 {index}");
-                    }
-                    else
-                    {
-                        LogHelper.PrintError($"索引 {index} 超出范围");
-                    }
                     break;
                     
                 case "VVDVoteRoute":
