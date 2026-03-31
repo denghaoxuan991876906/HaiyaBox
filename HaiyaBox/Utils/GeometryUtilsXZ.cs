@@ -9,6 +9,16 @@ public static class GeometryUtilsXZ
         var r = Math.Round(4 - 4 * Math.Atan2(point.X - centre.X, point.Z - centre.Z) / Math.PI) % 8;
         return (int)r;
     }
+
+    public static float VectorToRadians(Vector3 vector)
+    {
+        return MathF.Atan2(vector.X, vector.Z);
+    }
+
+    public static float VectorToRadians(Vector3 vector, Vector3 centre)
+    {
+        return MathF.Atan2(vector.X - centre.X, vector.Z - centre.Z);
+    }
     
     public static Vector3 RotatePoint(Vector3 point, Vector3 centre, float radian)
     {
