@@ -115,7 +115,7 @@ public class AddonDebugTab
         ImGui.Text("Addon 调试界面");
         ImGui.Separator();
 
-        var 目的地s = Svc.Objects.Where(e => e.Name.TextValue == "选择目的地");
+        var 目的地s = Svc.Objects.Where(e => e.Name.TextValue == "选择目的地" && e.IsTargetable);
         foreach (var gameObject in 目的地s)
         {
             ImGui.Text($"坐标：{gameObject.Position}");
