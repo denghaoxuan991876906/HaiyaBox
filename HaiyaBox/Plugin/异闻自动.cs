@@ -9,6 +9,7 @@ using AEAssist.Helper;
 using AEAssist.MemoryApi;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using HaiyaBox.Utils;
@@ -161,19 +162,83 @@ public class 商客异变
     public static Vector3 boss2检测点;
     public static Vector3 boss3检测点;
     public static Vector3 交互位置;
+    public static bool 可交互;
     public static bool 交互完成;
+    public static bool 交互流程中;
+    public static bool 路线选择完成;
     public static uint 当前bossId;
     public static bool 战斗中;
     public static float boss血量;
     public static bool boss已死亡;
+    private static List<string> 路线文本 = [];
 
     public static void Reset()
     {
-
+        可交互 = false;
+        交互完成 = false;
+        战斗中 = false;
+        boss已死亡 = false;
+        路线选择完成 = false;
+        交互流程中 = false;
+        进度 = 0;
+        重生点 = boss1检测点;
     }
 
     public static void Update()
     {
-      
+        var mapid = Core.Resolve<MemApiMap>().GetCurrTerrId();
+        if (mapid != 1317) return;
+        if (Svc.Condition[ConditionFlag.BetweenAreas])return;
+        var 交互对象 = Svc.Objects.FirstOrDefault(e => e.Name.TextValue == "" && e.DistanceToPlayer() < 20);
+        if (交互对象 != null)
+        {
+            交互位置 = 交互对象.Position;
+            可交互 = 交互对象.IsTargetable;
+        }
+
+        if (可交互 && !交互完成 && !交互流程中)
+        {
+            交互(交互对象);
+            return;
+        }
+
+        if (VVDVoteRouteHelper.IsAddonOpen() && !路线选择完成)
+        {
+            List<bool> 完成选择路线 = [];
+            完成选择路线.AddRange(路线文本.Select(路线 => VVDVoteRouteHelper.SelectByText(路线)));
+            if (完成选择路线.Any())
+            {
+                路线选择完成 = true;
+            }
+        }
+    }
+
+    private static void 进度更新()
+    {
+        
+    }
+
+    private static void BattleUpdate()
+    {
+        
+    }
+
+    private static async void 交互(IGameObject 交互对象)
+    {
+        try
+        {
+            交互流程中 = true;
+            Core.Me.SetPos(交互对象.Position);
+            await Task.Delay(500);
+            交互对象.TargetInteract();
+            await Task.Delay(500);
+            交互完成 = true;
+            交互流程中 = false;
+        }
+        catch (Exception e)
+        {
+            LogHelper.Error(e.ToString());
+        }
     }
 }
+
