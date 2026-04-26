@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Text.Json;
 using AEAssist;
 using AEAssist.Helper;
@@ -252,8 +253,40 @@ namespace HaiyaBox.Settings
         public bool XszCmdEnabled { get; set; } = false;
         public bool RollModeEnable { get;  set; } = true;
         public string NeedRole { get; set; } = "";
+        public Dictionary<string, bool> RoleSelection { get; set; } = CreateDefaultRoleSelection();
+        public Dictionary<string, bool> RollSelection { get; set; } = CreateDefaultRollSelection();
+        public string SelectedRoles { get; set; } = "";
+        public bool CustomRoleEnabled { get; set; }
+        public string CustomRoleInput { get; set; } = "";
+        public string CustomCommand { get; set; } = "";
+        public string RollRoles { get; set; } = "";
+        public string PassRoles { get; set; } = "";
+        public bool KillGameAfterRunLimit { get; set; }
         // 当前自动功能所在地图的 ID（默认值为 1238）
         public uint AutoFuncZoneId { get; set; } = 1238;
+
+        // 异闻自动默认重生点
+        public float OccultRespawnPointX { get; set; } = 375.3f;
+        public float OccultRespawnPointY { get; set; } = -29.5f;
+        public float OccultRespawnPointZ { get; set; } = 534.9f;
+
+        // 异闻自动Boss1配置
+        public uint OccultBoss1Id { get; set; } = 19097;
+        public float OccultBoss1PointX { get; set; } = 375.3f;
+        public float OccultBoss1PointY { get; set; } = -29.5f;
+        public float OccultBoss1PointZ { get; set; } = 534.9f;
+
+        // 异闻自动Boss2配置
+        public uint OccultBoss2Id { get; set; } = 19226;
+        public float OccultBoss2PointX { get; set; } = 170.1f;
+        public float OccultBoss2PointY { get; set; } = -16.0f;
+        public float OccultBoss2PointZ { get; set; } = -818.7f;
+
+        // 异闻自动Boss3配置
+        public uint OccultBoss3Id { get; set; } = 19056;
+        public float OccultBoss3PointX { get; set; } = -759f;
+        public float OccultBoss3PointY { get; set; } = -54f;
+        public float OccultBoss3PointZ { get; set; } = -800f;
 
         // 自动倒计时开启与否，以及相应的倒计时延迟（单位：秒）
         public bool AutoCountdownEnabled { get; set; }
@@ -322,6 +355,68 @@ namespace HaiyaBox.Settings
             XszRemoteEnabled = enabled;
             FullAutoSettings.Instance.Save();
         }
+
+        public void UpdateRoleSelection(Dictionary<string, bool> selection)
+        {
+            RoleSelection = CreateDefaultRoleSelection();
+            foreach (var pair in selection)
+            {
+                RoleSelection[pair.Key] = pair.Value;
+            }
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRollSelection(Dictionary<string, bool> selection)
+        {
+            RollSelection = CreateDefaultRollSelection();
+            foreach (var pair in selection)
+            {
+                RollSelection[pair.Key] = pair.Value;
+            }
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateSelectedRoles(string roles)
+        {
+            SelectedRoles = roles;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateCustomRoleEnabled(bool enabled)
+        {
+            CustomRoleEnabled = enabled;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateCustomRoleInput(string input)
+        {
+            CustomRoleInput = input;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateCustomCommand(string command)
+        {
+            CustomCommand = command;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateRollRoles(string roles)
+        {
+            RollRoles = roles;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdatePassRoles(string roles)
+        {
+            PassRoles = roles;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public void UpdateKillGameAfterRunLimit(bool enabled)
+        {
+            KillGameAfterRunLimit = enabled;
+            FullAutoSettings.Instance.Save();
+        }
         public void UpdateDrCmdEnabled(bool enabled)
         {
             DRCmdEnabled = enabled;
@@ -339,6 +434,70 @@ namespace HaiyaBox.Settings
         public void UpdateAutoFuncZoneId(uint zoneId)
         {
             AutoFuncZoneId = zoneId;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public Vector3 GetOccultRespawnPoint()
+        {
+            return new Vector3(OccultRespawnPointX, OccultRespawnPointY, OccultRespawnPointZ);
+        }
+
+        public void UpdateOccultRespawnPoint(Vector3 point)
+        {
+            OccultRespawnPointX = point.X;
+            OccultRespawnPointY = point.Y;
+            OccultRespawnPointZ = point.Z;
+            FullAutoSettings.Instance.Save();
+        }
+
+        public uint GetOccultBossId(int index)
+        {
+            return index switch
+            {
+                0 => OccultBoss1Id,
+                1 => OccultBoss2Id,
+                2 => OccultBoss3Id,
+                _ => 0
+            };
+        }
+
+        public Vector3 GetOccultBossPoint(int index)
+        {
+            return index switch
+            {
+                0 => new Vector3(OccultBoss1PointX, OccultBoss1PointY, OccultBoss1PointZ),
+                1 => new Vector3(OccultBoss2PointX, OccultBoss2PointY, OccultBoss2PointZ),
+                2 => new Vector3(OccultBoss3PointX, OccultBoss3PointY, OccultBoss3PointZ),
+                _ => Vector3.Zero
+            };
+        }
+
+        public void UpdateOccultBossSlot(int index, uint bossId, Vector3 point)
+        {
+            switch (index)
+            {
+                case 0:
+                    OccultBoss1Id = bossId;
+                    OccultBoss1PointX = point.X;
+                    OccultBoss1PointY = point.Y;
+                    OccultBoss1PointZ = point.Z;
+                    break;
+                case 1:
+                    OccultBoss2Id = bossId;
+                    OccultBoss2PointX = point.X;
+                    OccultBoss2PointY = point.Y;
+                    OccultBoss2PointZ = point.Z;
+                    break;
+                case 2:
+                    OccultBoss3Id = bossId;
+                    OccultBoss3PointX = point.X;
+                    OccultBoss3PointY = point.Y;
+                    OccultBoss3PointZ = point.Z;
+                    break;
+                default:
+                    return;
+            }
+
             FullAutoSettings.Instance.Save();
         }
 
@@ -678,6 +837,30 @@ namespace HaiyaBox.Settings
 
             FullAutoSettings.Instance.Save();
         }
+
+        private static Dictionary<string, bool> CreateDefaultRoleSelection() => new()
+        {
+            { "MT", false },
+            { "ST", false },
+            { "H1", false },
+            { "H2", false },
+            { "D1", false },
+            { "D2", false },
+            { "D3", false },
+            { "D4", false }
+        };
+
+        private static Dictionary<string, bool> CreateDefaultRollSelection() => new()
+        {
+            { "MT", true },
+            { "ST", false },
+            { "H1", false },
+            { "H2", false },
+            { "D1", false },
+            { "D2", false },
+            { "D3", false },
+            { "D4", false }
+        };
     }
 
     /// <summary>

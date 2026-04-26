@@ -64,12 +64,12 @@ public static unsafe class VVDVoteRouteHelper
             if (ignoreCase)
             {
                 if (entries[i].Text.Contains(matchText, System.StringComparison.OrdinalIgnoreCase))
-                    return i;
+                    return entries[i].Index;
             }
             else
             {
                 if (entries[i].Text.Contains(matchText))
-                    return i;
+                    return entries[i].Index;
             }
         }
         return null;
@@ -83,12 +83,12 @@ public static unsafe class VVDVoteRouteHelper
             if (ignoreCase)
             {
                 if (string.Equals(entries[i].Text, matchText, System.StringComparison.OrdinalIgnoreCase))
-                    return i;
+                    return entries[i].Index;
             }
             else
             {
                 if (entries[i].Text == matchText)
-                    return i;
+                    return entries[i].Index;
             }
         }
         return null;
@@ -104,18 +104,21 @@ public static unsafe class VVDVoteRouteHelper
         }
         
         var entries = GetEntries();
-        if (index < 0 || index >= entries.Count)
+        var targetEntry = entries.FirstOrDefault(e => e.Index == index);
+        if (targetEntry == default)
         {
-            LogHelper.PrintError($"索引 {index} 超出范围 (0-{entries.Count - 1})");
+            LogHelper.PrintError($"未找到 {AddonName} 回调索引 {index}");
             return false;
         }
         
         try
         {
             var atkValue = new AtkValue();
-            atkValue.SetInt(index);
-            atk->FireCallback(1, &atkValue);
-            LogHelper.Print($"已选择 {AddonName} 索引 {index}: {entries[index].Text}");
+            atkValue.SetInt(1);
+            LogHelper.Print($"[{AddonName}] 当前条目: {BuildEntriesSummary(entries)}");
+            LogHelper.Print($"[{AddonName}] 准备选择回调索引 {index}: {targetEntry.Text}");
+            atk->FireCallback((uint)index, &atkValue);
+            LogHelper.Print($"已选择 {AddonName} 索引 {index}: {targetEntry.Text}");
             return true;
         }
         catch (System.Exception ex)
@@ -161,5 +164,13 @@ public static unsafe class VVDVoteRouteHelper
         {
             LogHelper.Print($"  [{entry.Index}] {entry.Text}");
         }
+    }
+
+    private static string BuildEntriesSummary(List<(int Index, string Text)> entries)
+    {
+        if (entries.Count == 0)
+            return "<无条目>";
+
+        return string.Join(" | ", entries.Select(e => $"[{e.Index}] {e.Text}"));
     }
 }

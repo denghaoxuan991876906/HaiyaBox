@@ -57,11 +57,17 @@ public class AddonDebugTab
         if (atk == null) return;
         
         UpdateAddonData(addonName, atk);
+        LogHelper.Print($"[Addon调试] 打开 {addonName}");
+        if (addonName == VVDVoteRouteHelper.AddonName)
+        {
+            VVDVoteRouteHelper.PrintEntries();
+        }
     }
 
     private void OnAddonFinalize(AddonEvent eventType, AddonArgs addonInfo)
     {
         var addonName = addonInfo.AddonName;
+        LogHelper.Print($"[Addon调试] 关闭 {addonName}");
         _addonEntries.Remove(addonName);
         _addonTexts.Remove(addonName);
         Plugin.AutoSelectAddonService.Instance.ClearLastSelect(addonName);
@@ -274,7 +280,7 @@ public class AddonDebugTab
             {
                 if (entries[i].Text.Contains(matchText, System.StringComparison.OrdinalIgnoreCase))
                 {
-                    matchedIndex = i;
+                    matchedIndex = entries[i].Index;
                     break;
                 }
             }

@@ -71,7 +71,7 @@ public class AutoSelectAddonService
                 {
                     if (addonEntries[i].Text.Contains(entry.MatchText, System.StringComparison.OrdinalIgnoreCase))
                     {
-                        targetIndex = i;
+                        targetIndex = addonEntries[i].Index;
                         break;
                     }
                 }
@@ -84,7 +84,7 @@ public class AutoSelectAddonService
                     {
                         if (entry.MatchRegex.IsMatch(addonEntries[i].Text))
                         {
-                            targetIndex = i;
+                            targetIndex = addonEntries[i].Index;
                             break;
                         }
                     }
