@@ -742,7 +742,7 @@ namespace HaiyaBox.UI
         private string FormatPointXZ(Vector3? p) =>
             p.HasValue ? $"<{p.Value.X:F2}, 0, {p.Value.Z:F2}>" : "未记录";
 
-        private bool ScreenToWorld(Vector2 screenPos, out Vector3 worldPos)
+        public static bool ScreenToWorld(Vector2 screenPos, out Vector3 worldPos)
         {
             var viewportPos = ImGui.GetMainViewport().Pos;
             var localScreenPos = screenPos - viewportPos;

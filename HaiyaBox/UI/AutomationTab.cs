@@ -227,15 +227,13 @@ namespace HaiyaBox.UI
             {
                 return;
             }
-            var mousePos = ImGui.GetIO().MousePos;
-            if (!Svc.GameGui.ScreenToWorld(mousePos, out var worldPos))
+            var mousePos = ImGui.GetMousePos();
+            if (GeometryTab.ScreenToWorld(mousePos, out var wPos3D))
             {
-                LogHelper.PrintError($"[/remotetp] ScreenToWorld失败。屏幕={mousePos}");
-                return;
-            }
+                var pointXZ = new Vector3(wPos3D.X, 0, wPos3D.Z);
 
-            LogHelper.Print($"[/remotetp] 目标={args} 屏幕={mousePos} 世界={worldPos}");
-            XszRemote.SetPos(args, worldPos);
+                XszRemote.SetPos(args, pointXZ);
+            }
         }
         /// <summary>
         /// 每帧调用 Update 方法，依次执行倒计时、退本与排本更新逻辑，
