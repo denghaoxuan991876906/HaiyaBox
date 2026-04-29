@@ -275,7 +275,7 @@ namespace HaiyaBox.UI
             ImGui.SameLine();
             if (ImGui.Button("使用玩家位置##ArenaCenter"))
             {
-                var player = Svc.ClientState.LocalPlayer;
+                var player = Svc.Objects.LocalPlayer;
                 if (player != null)
                 {
                     _arenaCenter = player.Position;
@@ -360,7 +360,7 @@ namespace HaiyaBox.UI
                 ImGui.SameLine();
                 if (ImGui.Button("使用玩家位置##ReferencePoint"))
                 {
-                    var player = Svc.ClientState.LocalPlayer;
+                    var player = Svc.Objects.LocalPlayer;
                     if (player != null)
                     {
                         _referencePoint = player.Position;
@@ -512,7 +512,7 @@ namespace HaiyaBox.UI
             ImGui.SameLine();
             if (ImGui.Button("获取玩家位置##AOEOrigin"))
             {
-                var player = Svc.ClientState.LocalPlayer;
+                var player = Svc.Objects.LocalPlayer;
                 if (player != null)
                 {
                     _origin = player.Position;
@@ -587,7 +587,7 @@ namespace HaiyaBox.UI
                     ImGui.SameLine();
                     if (ImGui.Button("获取玩家位置##Orbit"))
                     {
-                        var player = Svc.ClientState.LocalPlayer;
+                        var player = Svc.Objects.LocalPlayer;
                         if (player != null)
                         {
                             _orbitCenter = player.Position;

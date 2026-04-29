@@ -15,7 +15,6 @@ using ECommons.GameFunctions;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using HaiyaBox.Utils;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace HaiyaBox.UI;
 

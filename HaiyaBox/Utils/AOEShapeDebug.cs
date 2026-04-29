@@ -75,7 +75,7 @@ public static class AOEShapeDebug
         }
 
         var now = DateTime.UtcNow;
-        var height = Svc.ClientState?.LocalPlayer?.Position.Y ?? 0f;
+        var height = Svc.Objects?.LocalPlayer?.Position.Y ?? 0f;
         var color = Palette[GetColorBucket(shape, origin) % Palette.Length];
         var duration = MathF.Max(durationSeconds, MinDurationSeconds);
 

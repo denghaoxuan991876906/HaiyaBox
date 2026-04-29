@@ -118,7 +118,7 @@ namespace HaiyaBox.Plugin
 
         private bool TryOpenClosestTreasure()
         {
-            IPlayerCharacter? player = Svc.ClientState.LocalPlayer;
+            IPlayerCharacter? player = Svc.Objects.LocalPlayer;
             if (player == null)
                 return false;
 

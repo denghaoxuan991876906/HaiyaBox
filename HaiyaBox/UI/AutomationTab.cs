@@ -13,6 +13,7 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.Command;
+using Dalamud.Game.DutyState;
 using Dalamud.Game.Text;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
@@ -209,7 +210,10 @@ namespace HaiyaBox.UI
                 HelpMessage = "遥控TP"
             });
         }
-        
+
+
+
+
         /// <summary>
         /// 在插件卸载时取消对副本状态事件的订阅，
         /// 防止因事件残留引起内存泄漏或异常提交。
@@ -260,15 +264,15 @@ namespace HaiyaBox.UI
         /// </summary>
         /// <param name="sender">事件发送者</param>
         /// <param name="e">副本任务ID</param>
-        private void OnDutyCompleted(object? sender, ushort e)
+        private void OnDutyCompleted(IDutyStateEventArgs args)
         {
             // 打印副本完成事件日志
-            LogHelper.Print($"副本任务完成（DutyCompleted 事件，ID: {e}）");
+            LogHelper.Print($"副本任务完成（DutyCompleted 事件，ID: {args.EventHandlerId}）");
             _dutyCompleted = true; // 标记副本已完成
             
             _runtimes++;
             // 查找字典中是否存在与当前副本 ID 对应的更新操作
-            if (_dutyUpdateActions.TryGetValue((DutyType)e, out var updateAction))
+            if (_dutyUpdateActions.TryGetValue((DutyType)args.EventHandlerId, out var updateAction))
             {
                 updateAction();
             }
@@ -281,9 +285,9 @@ namespace HaiyaBox.UI
         /// </summary>
         /// <param name="sender">事件发送者</param>
         /// <param name="e">副本任务ID</param>
-        private void OnDutyWiped(object? sender, ushort e)
+        private void OnDutyWiped(IDutyStateEventArgs args)
         {
-            LogHelper.Print($"副本团灭重置（DutyWiped 事件，ID: {e}）");
+            LogHelper.Print($"副本团灭重置（DutyWiped 事件，ID: {args.EventHandlerId}）");
             if (Core.Resolve<MemApiMap>().GetCurrTerrId() == 1238)
                 ChatHelper.SendMessage("/aeReload");
             // 如有需要，在此处重置其他状态

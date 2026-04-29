@@ -3,6 +3,7 @@ using AEAssist.Extension;
 using AEAssist.MemoryApi;
 using AOESafetyCalculator.Core;
 using AOESafetyCalculator.SafetyZone;
+using Dalamud.Game.DutyState;
 using ECommons.DalamudServices;
 using HaiyaBox.Settings;
 
@@ -129,7 +130,7 @@ public static class SafeZoneAutoDraw
         if (!Enabled) return result;
 
         var now = DateTime.Now;
-        var player = Svc.ClientState.LocalPlayer;
+        var player = Svc.Objects.LocalPlayer;
         var height = player?.Position.Y ?? 0f;
         var fallbackCenter = player == null ? new WPos(100f, 100f) : WPos.FromVec3(player.Position);
 
@@ -195,6 +196,8 @@ public static class SafeZoneAutoDraw
         }
     }
 
+
+
     private static void UnbindEvents()
     {
         if (!_eventsBound) return;
@@ -210,9 +213,11 @@ public static class SafeZoneAutoDraw
         }
     }
 
-    private static void OnDutyCompleted(object? sender, ushort e) => ClearAll();
-    private static void OnDutyWiped(object? sender, ushort e) => ClearAll();
-    private static void OnTerritoryChanged(ushort e) => ClearAll();
+
+
+    private static void OnDutyCompleted(IDutyStateEventArgs args) => ClearAll();
+    private static void OnDutyWiped(IDutyStateEventArgs args) => ClearAll();
+    private static void OnTerritoryChanged(uint obj) => ClearAll();
 
     private static bool IsInDuty()
     {
