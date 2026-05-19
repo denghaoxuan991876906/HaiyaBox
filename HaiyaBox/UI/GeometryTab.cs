@@ -50,6 +50,10 @@ public class GeometryTab
     private List<Vector3> _distributionPositions = new();
     private bool _addDistributionToDebugPoints = true;
     private bool _copyCoordinatesWithF = false;
+    private bool _useCustomCenter;
+    private float _customCenterX;
+    private float _customCenterY;
+    private float _customCenterZ = 100f;
 
     // Fixed Position Data
     private readonly string[] _centerLabels = ["旧(0,0,0)", "新(100,0,100)"];
@@ -186,6 +190,10 @@ public class GeometryTab
     private void DrawHeaderSection()
     {
         ImGui.TextColored(new Vector4(1f, 0.85f, 0.4f, 1f), "提示: Ctrl 记录点1, Shift 记录点2");
+        ImGui.SameLine();
+        var recordingEnabled = Settings.CheckPointRecordingEnabled;
+        if (ImGui.Checkbox("启用快捷键记录点", ref recordingEnabled))
+            Settings.UpdateCheckPointRecordingEnabled(recordingEnabled);
         ImGui.Separator();
         ImGui.Spacing();
     }
@@ -267,9 +275,12 @@ public class GeometryTab
     {
         ImGui.Spacing();
         ImGui.TextColored(new Vector4(0.8f, 0.8f, 1f, 1f), "输入坐标参数 (X, Y, Z)");
-        ImGuiHelper.LeftInputFloat("X坐标", ref _inputX, 0, 200);
-        ImGuiHelper.LeftInputFloat("Y坐标", ref _inputY, 0, 200);
-        ImGuiHelper.LeftInputFloat("Z坐标", ref _inputZ, 0, 200);
+        ImGui.SetNextItemWidth(200f * Scale);
+        ImGui.InputFloat("X坐标", ref _inputX);
+        ImGui.SetNextItemWidth(200f * Scale);
+        ImGui.InputFloat("Y坐标", ref _inputY);
+        ImGui.SetNextItemWidth(200f * Scale);
+        ImGui.InputFloat("Z坐标", ref _inputZ);
 
         if (ImGui.Button("添加到TrustDebug##xyz"))
         {
@@ -615,6 +626,14 @@ public class GeometryTab
         if (_distributionMode == 2) ImGui.InputFloat("固定角度", ref _fixedAngle, 1f, 5f, "%.2f");
         if (_distributionMode == 3) ImGui.InputFloat("总计角度", ref _distributionTotalAngle, 1f, 5f, "%.2f");
 
+        ImGui.Checkbox("自定义中心点", ref _useCustomCenter);
+        if (_useCustomCenter)
+        {
+            ImGui.InputFloat("中心X", ref _customCenterX, 1f, 5f, "%.2f");
+            ImGui.InputFloat("中心Y", ref _customCenterY, 1f, 5f, "%.2f");
+            ImGui.InputFloat("中心Z", ref _customCenterZ, 1f, 5f, "%.2f");
+        }
+
         if (ImGui.Button("计算分布")) CalculateDistribution();
         ImGui.SameLine();
         ImGui.Checkbox("添加计算结果到Debug点", ref _addDistributionToDebugPoints);
@@ -650,6 +669,9 @@ public class GeometryTab
     /// </summary>
     public void CheckPointRecording()
     {
+        if (!Settings.CheckPointRecordingEnabled)
+            return;
+
         var ctrl = ImGui.IsKeyPressed(ImGuiKey.LeftCtrl) || ImGui.IsKeyPressed(ImGuiKey.RightCtrl);
         var shift = ImGui.IsKeyPressed(ImGuiKey.LeftShift) || ImGui.IsKeyPressed(ImGuiKey.RightShift);
 
@@ -698,7 +720,9 @@ public class GeometryTab
 
     private void CalculateDistribution()
     {
-        var center = _centerPositions[Settings.SelectedCenterIndex];
+        var center = _useCustomCenter
+            ? new Vector3(_customCenterX, _customCenterY, _customCenterZ)
+            : _centerPositions[Settings.SelectedCenterIndex];
 
         _distributionPositions = _distributionMode switch
         {

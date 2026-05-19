@@ -157,6 +157,9 @@ public class GeometrySettings
     // 控制是否添加 Debug 点的开关（默认为 false）
     public bool AddDebugPoints { get; set; }
 
+    // 控制是否启用 Ctrl/Shift 点击记录点的功能（默认为 true）
+    public bool CheckPointRecordingEnabled { get; set; } = true;
+
     /// <summary>
     /// 更新场地中心选项，并保存配置
     /// </summary>
@@ -220,6 +223,12 @@ public class GeometrySettings
         FullAutoSettings.Instance.Save();
     }
 
+    public void UpdateCheckPointRecordingEnabled(bool enabled)
+    {
+        CheckPointRecordingEnabled = enabled;
+        FullAutoSettings.Instance.Save();
+    }
+
     /// <summary>
     /// 重置 GeometrySettings 至默认值，并保存配置
     /// </summary>
@@ -232,6 +241,7 @@ public class GeometrySettings
         AngleInput = 0f;
         RadiusInput = 0f;
         AddDebugPoints = false;
+        CheckPointRecordingEnabled = true;
         FullAutoSettings.Instance.Save();
     }
 }

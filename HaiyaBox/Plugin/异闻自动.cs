@@ -849,10 +849,7 @@ public class 商客异变
     private static void 发送退本指令()
     {
         LogHelper.Print("[商客异变] 最终Boss完成，等待10秒后发送退本指令");
-        if (FullAutoSettings.Instance.AutomationSettings.DRCmdEnabled)
-            RemoteControl.Cmd("", "/pdr leaveduty");
-        else
-            RemoteControl.Cmd("", "/xsz-leaveduty");
+        RemoteControl.Cmd("", "/xsz-leaveduty");
         ChatHelper.SendMessage("/xsz-respawn off");
     }
 

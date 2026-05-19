@@ -374,16 +374,7 @@ public class AutomationTab
         //【地图记录与倒计时设置】
         ImGui.Text("本内自动化设置:");
         ImGui.SameLine();
-        var drCmdEnabled = Settings.DRCmdEnabled;
-        var toggleLabel = drCmdEnabled ? "使用DR命令" : "使用XSZ命令";
-        if (ImGui.Checkbox(toggleLabel, ref drCmdEnabled))
-        {
-            Settings.UpdateDrCmdEnabled(drCmdEnabled);
-            Settings.UpdateXszCmdEnabled(!drCmdEnabled);
-        }
-
-        ImGui.SameLine();
-        ImGui.Text($"当前{toggleLabel}");
+        ImGui.Text("当前使用XSZ命令");
         // 按钮用于记录当前地图ID，并更新相应设置
         if (ImGui.Button("记录当前地图ID")) Settings.UpdateAutoFuncZoneId(Core.Resolve<MemApiZoneInfo>().GetCurrTerrId());
         ImGuiHelper.SetHoverTooltip("设置本部分内容先记录地图。");
@@ -450,21 +441,10 @@ public class AutomationTab
                 PersistRollSelection();
                 LogHelper.Print("需求roll点玩家：" + _rollRoles);
                 LogHelper.Print("放弃roll点玩家：" + _passRoles);
-                if (Settings.DRCmdEnabled)
-                {
-                    RemoteControl.Cmd("", "/xlenableplugin LazyLoot");
-                    RemoteControl.Cmd("", "/fulf on");
-                    RemoteControl.Cmd(_rollRoles, "/fulf need");
-                    if (_passRoles != "")
-                        RemoteControl.Cmd(_passRoles, "/fulf greed");
-                }
-                else
-                {
-                    RemoteControl.Cmd("", "/xsz-fulf on");
-                    RemoteControl.Cmd(_rollRoles, "/xsz-fulf need");
-                    if (_passRoles != "")
-                        RemoteControl.Cmd(_passRoles, "/xsz-fulf greed");
-                }
+                RemoteControl.Cmd("", "/xsz-fulf on");
+                RemoteControl.Cmd(_rollRoles, "/xsz-fulf need");
+                if (_passRoles != "")
+                    RemoteControl.Cmd(_passRoles, "/xsz-fulf greed");
             }
         }
 
@@ -472,8 +452,6 @@ public class AutomationTab
 
         ImGui.Separator();
         ImGui.Text("遥控按钮:");
-        var xszRemote = Settings.XszRemoteEnabled;
-        if (ImGui.Checkbox("使用XSZ遥控", ref xszRemote)) Settings.UpdateRemoteMode(xszRemote);
         //xsz遥控测试
         if (ImGui.Button("发送测试消息")) XszRemote.Cmd("MT", "/e 调用测试");
         ImGui.SameLine();
@@ -495,10 +473,7 @@ public class AutomationTab
         // 全队即刻退本按钮（需在副本内才可执行命令）
         if (ImGui.Button("全队即刻退本"))
         {
-            if (drCmdEnabled)
-                RemoteControl.Cmd("", "/pdr leaveduty");
-            else
-                RemoteControl.Cmd("", "/xsz-leaveduty");
+            RemoteControl.Cmd("", "/xsz-leaveduty");
         }
 
         ImGui.SameLine();
@@ -724,12 +699,9 @@ public class AutomationTab
             if (!string.IsNullOrEmpty(leaderName))
             {
                 var leaderRole = RemoteControl.GetRoleByPlayerName(leaderName);
-                if (drCmdEnabled)
-                    RemoteControl.Cmd(leaderRole, $"/pdrduty n {Settings.FinalSendDutyName}");
-                else
-                    RemoteControl.Cmd(leaderRole, $"/xsz-duty normal {Settings.FinalSendDutyName}");
+                RemoteControl.Cmd(leaderRole, $"/xsz-duty normal {Settings.FinalSendDutyName}");
                 LogHelper.Print(
-                    $"为队长 {leaderName} 发送排本命令: {(Settings.DRCmdEnabled ? "/pdrduty n" : "/xsz-duty normal")} {Settings.FinalSendDutyName}");
+                    $"为队长 {leaderName} 发送排本命令: /xsz-duty normal {Settings.FinalSendDutyName}");
             }
         }
 
@@ -740,7 +712,7 @@ public class AutomationTab
         if (Settings.UnrestEnabled)
             finalDuty += " unrest";
         Settings.UpdateFinalSendDutyName(finalDuty);
-        ImGui.Text($"将发送的排本命令: {(Settings.DRCmdEnabled ? "/pdrduty n" : "/xsz-duty normal")} {finalDuty}");
+        ImGui.Text($"将发送的排本命令: /xsz-duty normal {finalDuty}");
 
 
         ImGui.Separator();
@@ -904,10 +876,7 @@ public class AutomationTab
             {
                 // 否则直接延迟指定时间再退本
                 await Task.Delay(Settings.AutoLeaveDelay * 1000);
-                if (Settings.DRCmdEnabled)
-                    RemoteControl.Cmd("", "/pdr leaveduty");
-                else
-                    RemoteControl.Cmd("", "/xsz-leaveduty");
+                RemoteControl.Cmd("", "/xsz-leaveduty");
                 _isLeaveCompleted = true;
             }
         }
@@ -990,12 +959,9 @@ public class AutomationTab
             if (!string.IsNullOrEmpty(leaderName))
             {
                 var leaderRole = RemoteControl.GetRoleByPlayerName(leaderName);
-                if (Settings.DRCmdEnabled && leaderRole != null)
-                    RemoteControl.Cmd(leaderRole, $"/pdrduty n {Settings.FinalSendDutyName}");
-                else
-                    RemoteControl.Cmd(leaderRole, $"/xsz-duty normal {Settings.FinalSendDutyName}");
+                RemoteControl.Cmd(leaderRole, $"/xsz-duty normal {Settings.FinalSendDutyName}");
                 LogHelper.Print(
-                    $"自动排本：为队长 {leaderName} 发送排本命令: {(Settings.DRCmdEnabled ? "/pdrduty n" : "/xsz-duty normal")} {Settings.FinalSendDutyName}");
+                    $"自动排本：为队长 {leaderName} 发送排本命令: /xsz-duty normal {Settings.FinalSendDutyName}");
             }
 
             _lastAutoQueueTime = DateTime.Now;
