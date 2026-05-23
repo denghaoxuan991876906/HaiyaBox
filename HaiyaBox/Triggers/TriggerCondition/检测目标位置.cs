@@ -23,7 +23,7 @@ public class 检测目标位置A : ITriggerCond
 
     public bool Handle(ITriggerCondParams triggerCondParams)
     {
-        var target = Svc.Objects.FirstOrDefault(o => { return o.DataId == targetDataID; });
+        var target = Svc.Objects.FirstOrDefault(o => { return o.BaseId == targetDataID; });
         if (target == null) return false;
 
         var targetPosition = target.Position;

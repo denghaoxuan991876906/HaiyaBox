@@ -253,6 +253,11 @@ public class GeometrySettings
 /// </summary>
 public class AutomationSettings
 {
+    // 自定义副本名是否使用最近结束的副本
+    public bool UseLastCompletedDutyName { get; set; }
+
+    // 最近从系统消息中捕获到的已结束副本名
+    public string LastCompletedDutyName { get; set; } = "";
     public bool XszRemoteEnabled { get; set; }
     public bool DRCmdEnabled { get; set; } = true;
     public bool XszCmdEnabled { get; set; } = false;
@@ -358,7 +363,23 @@ public class AutomationSettings
     public int RecollectionCompletedCount { get; set; }
     public int EverkeepCompletedCount { get; set; }
     public int RenlongCompletedCount { get; set; }
+    /// <summary>
+    /// 更新是否使用最近结束副本名，并保存配置
+    /// </summary>
+    public void UpdateUseLastCompletedDutyName(bool enabled)
+    {
+        UseLastCompletedDutyName = enabled;
+        FullAutoSettings.Instance.Save();
+    }
 
+    /// <summary>
+    /// 更新最近结束副本名，并保存配置
+    /// </summary>
+    public void UpdateLastCompletedDutyName(string dutyName)
+    {
+        LastCompletedDutyName = dutyName;
+        FullAutoSettings.Instance.Save();
+    }
     public void UpdateRemoteMode(bool enabled)
     {
         XszRemoteEnabled = enabled;

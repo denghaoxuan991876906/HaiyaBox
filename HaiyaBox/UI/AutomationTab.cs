@@ -784,7 +784,7 @@ public class AutomationTab
                 var enemies = Svc.Objects.OfType<IBattleNpc>().Where(x => x.IsTargetable && x.IsEnemy());
                 foreach (var enemy in enemies)
                     LogHelper.Print(
-                        $"敌对单位: {enemy.Name} (EntityId: {enemy.EntityId}, DataId: {enemy.DataId}, ObjId: {enemy.GameObjectId}), 位置: {enemy.Position}");
+                        $"敌对单位: {enemy.Name} (EntityId: {enemy.EntityId}, DataId: {enemy.BaseId}, ObjId: {enemy.GameObjectId}), 位置: {enemy.Position}");
             }
 
             /*
