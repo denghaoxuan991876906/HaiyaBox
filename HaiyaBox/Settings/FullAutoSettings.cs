@@ -329,12 +329,6 @@ public class AutomationSettings
     // 解限功能开关（用于排本命令中追加 "unrest"）
     public bool UnrestEnabled { get; set; }
 
-    // 自定义副本名是否使用最近结束的副本
-    public bool UseLastCompletedDutyName { get; set; }
-
-    // 最近从系统消息中捕获到的已结束副本名
-    public string LastCompletedDutyName { get; set; } = "";
-
     // 最终生成的排本命令字符串（自动根据配置拼接组合）
     public string FinalSendDutyName { get; set; } = "";
 
@@ -626,24 +620,6 @@ public class AutomationSettings
     public void UpdateUnrestEnabled(bool enabled)
     {
         UnrestEnabled = enabled;
-        FullAutoSettings.Instance.Save();
-    }
-
-    /// <summary>
-    /// 更新是否使用最近结束副本名，并保存配置
-    /// </summary>
-    public void UpdateUseLastCompletedDutyName(bool enabled)
-    {
-        UseLastCompletedDutyName = enabled;
-        FullAutoSettings.Instance.Save();
-    }
-
-    /// <summary>
-    /// 更新最近结束副本名，并保存配置
-    /// </summary>
-    public void UpdateLastCompletedDutyName(string dutyName)
-    {
-        LastCompletedDutyName = dutyName;
         FullAutoSettings.Instance.Save();
     }
 

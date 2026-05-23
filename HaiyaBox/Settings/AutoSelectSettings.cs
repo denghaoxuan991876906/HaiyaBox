@@ -50,11 +50,18 @@ public class AutoSelectEntry
 public class AutoSelectSettings
 {
     public bool AutoSelectEnabled { get; set; } = false;
+    public bool DebugAutoRefresh { get; set; } = true;
     public List<AutoSelectEntry> Entries { get; set; } = new();
 
     public void UpdateAutoSelectEnabled(bool enabled)
     {
         AutoSelectEnabled = enabled;
+        FullAutoSettings.Instance.Save();
+    }
+
+    public void UpdateDebugAutoRefresh(bool enabled)
+    {
+        DebugAutoRefresh = enabled;
         FullAutoSettings.Instance.Save();
     }
 
