@@ -10,6 +10,7 @@ using ECommons.DalamudServices;
 using ECommons.GameFunctions;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using HaiyaBox.Plugin;
+using HaiyaBox.Settings;
 using HaiyaBox.Utils;
 
 namespace HaiyaBox.UI;
@@ -22,7 +23,7 @@ public class AddonDebugTab
     private readonly HashSet<string> _watchedAddons = new()
         { "SelectString", "SelectIconString", "SelectYesNo", "Talk", "VVDVoteRoute" };
 
-    private bool _autoRefresh = true;
+    private bool _autoRefresh = FullAutoSettings.Instance.AutoSelectSettings.DebugAutoRefresh;
     private string _selectedAddon = "";
     private int _selectIndexInput = 0;
     private string _matchTextInput = "";
@@ -53,6 +54,7 @@ public class AddonDebugTab
         var atk = (AtkUnitBase*)addonInfo.Addon.Address;
 
         if (atk == null) return;
+        if (!_autoRefresh) return;
 
         UpdateAddonData(addonName, atk);
         LogHelper.Print($"[Addon调试] 打开 {addonName}");
@@ -121,7 +123,8 @@ public class AddonDebugTab
             if (ImGui.Button("交互"))
                 目的地id.TargetInteract();
 
-        ImGui.Checkbox("自动刷新", ref _autoRefresh);
+        if (ImGui.Checkbox("自动刷新", ref _autoRefresh))
+            FullAutoSettings.Instance.AutoSelectSettings.UpdateDebugAutoRefresh(_autoRefresh);
         ImGui.SameLine();
         if (ImGui.Button("手动刷新")) RefreshAllAddons();
 
