@@ -64,7 +64,7 @@ public class AddonDebugTab
     private void OnAddonFinalize(AddonEvent eventType, AddonArgs addonInfo)
     {
         var addonName = addonInfo.AddonName;
-        LogHelper.Print($"[Addon调试] 关闭 {addonName}");
+        if (_autoRefresh) LogHelper.Print($"[Addon调试] 关闭 {addonName}");
         _addonEntries.Remove(addonName);
         _addonTexts.Remove(addonName);
         AutoSelectAddonService.Instance.ClearLastSelect(addonName);

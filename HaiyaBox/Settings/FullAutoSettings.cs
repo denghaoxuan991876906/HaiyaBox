@@ -331,6 +331,9 @@ public class AutomationSettings
 
     public string CustomDutyName { get; set; } = "";
 
+    public bool UseLastCompletedDutyName { get; set; }
+    public string LastCompletedDutyName { get; set; } = "";
+
     // 解限功能开关（用于排本命令中追加 "unrest"）
     public bool UnrestEnabled { get; set; }
 
@@ -638,6 +641,18 @@ public class AutomationSettings
     /// <summary>
     /// 更新解限启用状态，并保存配置
     /// </summary>
+    public void UpdateUseLastCompletedDutyName(bool enabled)
+    {
+        UseLastCompletedDutyName = enabled;
+        FullAutoSettings.Instance.Save();
+    }
+
+    public void UpdateLastCompletedDutyName(string dutyName)
+    {
+        LastCompletedDutyName = dutyName;
+        FullAutoSettings.Instance.Save();
+    }
+
     public void UpdateUnrestEnabled(bool enabled)
     {
         UnrestEnabled = enabled;

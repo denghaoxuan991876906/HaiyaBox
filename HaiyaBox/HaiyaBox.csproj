@@ -15,12 +15,12 @@
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <OutputPath>$(APPDATA)\XIVLauncherCN\offlineplugins\AE\Plugins\HaiyaBox\</OutputPath>
+        <OutputPath>D:\A Yue Chajian\AEAssist\Plugins\HaiyaBox\</OutputPath>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <OutputPath>$(APPDATA)\XIVLauncherCN\offlineplugins\AE\Plugins\HaiyaBox\</OutputPath>
+        <OutputPath>D:\A Yue Chajian\AEAssist\Plugins\HaiyaBox\</OutputPath>
     </PropertyGroup>
 
     <!-- CI 环境使用相对路径输出 -->
