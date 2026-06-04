@@ -29,9 +29,9 @@ public static class RemoteControl
         XszRemote.SlideTp(role, pos, time);
     }
 
-    public static void SetRot(string role, float rot)
+    public static void SetRot(string role, float rot, int durationMs = 5000)
     {
-        XszRemote.SetRot(role, rot);
+        XszRemote.SetRot(role, rot, durationMs);
     }
 
     public static void MoveTo(string role, Vector3 pos)

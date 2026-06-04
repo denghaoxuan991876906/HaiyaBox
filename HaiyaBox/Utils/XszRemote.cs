@@ -107,10 +107,11 @@ public class XszRemote
     /// 设置指定角色的旋转角度
     /// </summary>
     /// <param name="role">角色名称</param>
-    /// <param name="rot">旋转角度</param>
-    public static void SetRot(string role, float rot)
+    /// <param name="rot">旋转角度（弧度）</param>
+    /// <param name="durationMs">锁定持续时间（毫秒），默认5000</param>
+    public static void SetRot(string role, float rot, int durationMs = 5000)
     {
-        Instance?.SetRot(role, rot);
+        Instance?.SetRot(role, rot, durationMs);
     }
 
     /// <summary>
