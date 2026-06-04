@@ -60,7 +60,7 @@ public class XSZToolboxIpc : IDisposable
     /// <summary>
     /// 设置旋转订阅者
     /// </summary>
-    private ICallGateSubscriber<string, float, object> _setRotSubscriber;
+    private ICallGateSubscriber<string, float, int, object> _setRotSubscriber;
 
     /// <summary>
     /// 移动到位置订阅者
@@ -181,7 +181,7 @@ public class XSZToolboxIpc : IDisposable
         _setMoveAssembleDelaySubscriber =
             Svc.PluginInterface.GetIpcSubscriber<string, int, object>("XSZToolbox.RemoteControl.SetMoveAssembleDelay");
         _setRotSubscriber =
-            Svc.PluginInterface.GetIpcSubscriber<string, float, object>("XSZToolbox.RemoteControl.SetRot");
+            Svc.PluginInterface.GetIpcSubscriber<string, float, int, object>("XSZToolbox.RemoteControl.SetRot");
         _moveToSubscriber =
             Svc.PluginInterface.GetIpcSubscriber<string, Vector3, object>("XSZToolbox.RemoteControl.MoveTo");
         _moveStopSubscriber = Svc.PluginInterface.GetIpcSubscriber<string, object>("XSZToolbox.RemoteControl.MoveStop");
@@ -328,10 +328,11 @@ public class XSZToolboxIpc : IDisposable
     /// 设置指定角色的旋转角度
     /// </summary>
     /// <param name="role">角色名称</param>
-    /// <param name="rot">旋转角度</param>
-    public void SetRot(string role, float rot)
+    /// <param name="rot">旋转角度（弧度）</param>
+    /// <param name="durationMs">锁定持续时间（毫秒），默认5000</param>
+    public void SetRot(string role, float rot, int durationMs = 5000)
     {
-        _setRotSubscriber?.InvokeAction(role, rot);
+        _setRotSubscriber?.InvokeAction(role, rot, durationMs);
     }
 
     /// <summary>
