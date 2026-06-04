@@ -2,8 +2,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Reflection;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Xml.Linq;
 using AEAssist;
 using AEAssist.Extension;
 using AEAssist.Helper;
@@ -18,9 +17,11 @@ public sealed class GitHubAutoUpdater : IDisposable
 {
     private const string Owner = "denghaoxuan991876906";
     private const string Repo = "HaiyaBox";
-    private const string ApiUrl = $"https://api.github.com/repos/{Owner}/{Repo}/releases";
+
     private const string PackagePrefix = "HaiyaBox-";
     private const string PackageExtension = ".zip";
+    private const string ReleasesFeedUrl = $"https://github.com/{Owner}/{Repo}/releases.atom";
+    private static readonly XNamespace AtomNs = "http://www.w3.org/2005/Atom";
 
     private static readonly HttpClient HttpClient = CreateHttpClient();
     private readonly object _lock = new();
@@ -146,17 +147,38 @@ public sealed class GitHubAutoUpdater : IDisposable
 
     private async Task<GitHubRelease?> GetLatestReleaseAsync()
     {
-        using var response = await HttpClient.GetAsync(ApiUrl);
+        using var response = await HttpClient.GetAsync(ReleasesFeedUrl);
         response.EnsureSuccessStatusCode();
 
-        await using var stream = await response.Content.ReadAsStreamAsync();
-        var releases = await JsonSerializer.DeserializeAsync<List<GitHubRelease>>(stream, JsonOptions);
-        return releases?
-            .Where(r => !r.Draft)
-            .Where(r => Settings.IncludePrerelease || !r.Prerelease)
-            .Where(r => r.Assets.Any(IsPluginPackage))
-            .OrderByDescending(r => r.PublishedAt ?? r.CreatedAt)
-            .FirstOrDefault();
+        var xml = await response.Content.ReadAsStringAsync();
+        var doc = XDocument.Parse(xml);
+
+        foreach (var entry in doc.Descendants(AtomNs + "entry"))
+        {
+            var id = entry.Element(AtomNs + "id")?.Value;
+            if (string.IsNullOrWhiteSpace(id)) continue;
+
+            var tagName = id[(id.LastIndexOf('/') + 1)..];
+            if (string.IsNullOrWhiteSpace(tagName)) continue;
+
+            DateTimeOffset.TryParse(entry.Element(AtomNs + "published")?.Value, out var published);
+
+            var asset = new GitHubAsset
+            {
+                Name = $"{PackagePrefix}{tagName}{PackageExtension}",
+                BrowserDownloadUrl = $"https://github.com/{Owner}/{Repo}/releases/download/{tagName}/{PackagePrefix}{tagName}{PackageExtension}"
+            };
+
+            return new GitHubRelease
+            {
+                TagName = tagName,
+                Prerelease = true,
+                PublishedAt = published,
+                Assets = [asset]
+            };
+        }
+
+        return null;
     }
 
     private async Task<string> DownloadAssetAsync(string tagName, GitHubAsset asset)
@@ -288,7 +310,7 @@ public sealed class GitHubAutoUpdater : IDisposable
     {
         var client = new HttpClient();
         client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("HaiyaBox", GetCurrentVersion()));
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/atom+xml"));
         client.Timeout = TimeSpan.FromSeconds(30);
         return client;
     }
@@ -312,31 +334,17 @@ public sealed class GitHubAutoUpdater : IDisposable
         return "1.0.0";
     }
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     private sealed class GitHubRelease
     {
-        [JsonPropertyName("tag_name")] public string TagName { get; set; } = "";
-
-        public bool Draft { get; set; }
-
+        public string TagName { get; set; } = "";
         public bool Prerelease { get; set; }
-
-        [JsonPropertyName("created_at")] public DateTimeOffset? CreatedAt { get; set; }
-
-        [JsonPropertyName("published_at")] public DateTimeOffset? PublishedAt { get; set; }
-
+        public DateTimeOffset? PublishedAt { get; set; }
         public List<GitHubAsset> Assets { get; set; } = [];
     }
 
     private sealed class GitHubAsset
     {
         public string Name { get; set; } = "";
-
-        [JsonPropertyName("browser_download_url")]
         public string BrowserDownloadUrl { get; set; } = "";
     }
 }

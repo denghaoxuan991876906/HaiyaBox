@@ -8,10 +8,12 @@ using AEAssist.GUI;
 using AEAssist.Helper;
 using AEAssist.MemoryApi;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Game.Chat;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Game.Command;
 using Dalamud.Game.DutyState;
+using Dalamud.Game.Text;
 using ECommons.DalamudServices;
 using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
@@ -234,6 +236,7 @@ public class AutomationTab
     {
         Svc.DutyState.DutyCompleted += OnDutyCompleted;
         Svc.DutyState.DutyWiped += OnDutyWiped;
+        Svc.Chat.ChatMessage += OnChatMessage;
         Svc.Commands.AddHandler(CommandName, new CommandInfo(OnCommand)
         {
             HelpMessage = "遥控TP"
@@ -249,7 +252,52 @@ public class AutomationTab
     {
         Svc.DutyState.DutyCompleted -= OnDutyCompleted;
         Svc.DutyState.DutyWiped -= OnDutyWiped;
+        Svc.Chat.ChatMessage -= OnChatMessage;
         Svc.Commands.RemoveHandler(CommandName);
+    }
+
+    private void OnChatMessage(IHandleableChatMessage message)
+    {
+        if (message.LogKind != XivChatType.SystemMessage)
+            return;
+
+        var dutyName = TryExtractCompletedDutyName(message.Message.TextValue);
+        if (string.IsNullOrWhiteSpace(dutyName))
+            return;
+
+        if (!Settings.UseLastCompletedDutyName)
+            return;
+
+        if (Settings.LastCompletedDutyName != dutyName)
+            Settings.UpdateLastCompletedDutyName(dutyName);
+
+        if (Settings.CustomDutyName != dutyName)
+            Settings.UpdateCustomDutyName(dutyName);
+
+        LogHelper.Print($"最近结束副本已更新为：{dutyName}");
+    }
+
+    private static string? TryExtractCompletedDutyName(string logText)
+    {
+        const string suffix = "任务结束了。";
+
+        var text = logText.Trim();
+        if (!text.EndsWith(suffix, StringComparison.Ordinal))
+            return null;
+
+        var start = text.IndexOf('“');
+        if (start < 0)
+            return null;
+
+        var end = text.IndexOf('”', start + 1);
+        if (end <= start + 1)
+            return null;
+
+        if (!string.Equals(text[(end + 1)..], suffix, StringComparison.Ordinal))
+            return null;
+
+        var dutyName = text[(start + 1)..end].Trim();
+        return string.IsNullOrWhiteSpace(dutyName) ? null : dutyName;
     }
 
     private void OnCommand(string command, string args)
@@ -689,6 +737,16 @@ public class AutomationTab
             ImGui.SetNextItemWidth(200f * scale);
             var custom = Settings.CustomDutyName;
             if (ImGui.InputText("自定义副本名称", ref custom, 50)) Settings.UpdateCustomDutyName(custom);
+
+            ImGui.SameLine();
+            var useLastCompletedDuty = Settings.UseLastCompletedDutyName;
+            if (ImGui.Checkbox("最近结束", ref useLastCompletedDuty))
+            {
+                Settings.UpdateUseLastCompletedDutyName(useLastCompletedDuty);
+                if (useLastCompletedDuty && !string.IsNullOrWhiteSpace(Settings.LastCompletedDutyName) &&
+                    Settings.CustomDutyName != Settings.LastCompletedDutyName)
+                    Settings.UpdateCustomDutyName(Settings.LastCompletedDutyName);
+            }
         }
 
         ImGui.SameLine();
@@ -726,7 +784,7 @@ public class AutomationTab
                 var enemies = Svc.Objects.OfType<IBattleNpc>().Where(x => x.IsTargetable && x.IsEnemy());
                 foreach (var enemy in enemies)
                     LogHelper.Print(
-                        $"敌对单位: {enemy.Name} (EntityId: {enemy.EntityId}, DataId: {enemy.DataId}, ObjId: {enemy.GameObjectId}), 位置: {enemy.Position}");
+                        $"敌对单位: {enemy.Name} (EntityId: {enemy.EntityId}, DataId: {enemy.BaseId}, ObjId: {enemy.GameObjectId}), 位置: {enemy.Position}");
             }
 
             /*
